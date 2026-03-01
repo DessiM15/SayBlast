@@ -1,0 +1,122 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String
+  email         String    @unique
+  passwordHash  String?
+  image         String?
+
+  // Email account fields — one per user, set during registration
+  emailProvider     String?   // "gmail", "outlook", "smtp"
+  emailAddress      String?   // the sender email address
+
+  // OAuth fields (for email sending)
+  emailAccessToken  String?   @db.Text
+  emailRefreshToken String?   @db.Text
+  emailTokenExpiry  DateTime?
+
+  // SMTP fields
+  smtpHost      String?
+  smtpPort      Int?
+  smtpUser      String?
+  smtpPass      String?   @db.Text // encrypted with AES-256 or Supabase Vault
+  smtpSecure    Boolean   @default(true)
+
+  // Email account status
+  emailVerified      Boolean @default(false)
+  onboardingComplete Boolean @default(false)
+
+  // Relations
+  campaigns     Campaign[]
+  audienceLists AudienceList[]
+  templates     CampaignTemplate[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model AudienceList {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name        String
+  description String?
+  contacts    Contact[]
+  campaigns   Campaign[]
+  createdAt   DateTime  @default(now())
+}
+
+model Contact {
+  id             String       @id @default(cuid())
+  audienceListId String
+  audienceList   AudienceList @relation(fields: [audienceListId], references: [id], onDelete: Cascade)
+  email          String
+  firstName      String?
+  lastName       String?
+  metadata       Json?
+  lastEmailedAt  DateTime?
+  createdAt      DateTime     @default(now())
+
+  @@unique([audienceListId, email])
+}
+
+model Campaign {
+  id              String         @id @default(cuid())
+  userId          String
+  user            User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name            String
+  status          String         @default("draft") // draft, scheduled, sending, sent, failed
+  subjectLine     String?
+  htmlBody        String?        @db.Text
+  textBody        String?        @db.Text
+  audienceListId  String?
+  audienceList    AudienceList?  @relation(fields: [audienceListId], references: [id], onDelete: SetNull)
+  templateId      String?
+  scheduledAt     DateTime?
+  sentAt          DateTime?
+  totalRecipients Int            @default(0)
+  sentCount       Int            @default(0)
+  skippedCount    Int            @default(0)
+  transcripts     VoiceTranscript[]
+  sendLog         SendLog[]
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+}
+
+model CampaignTemplate {
+  id           String   @id @default(cuid())
+  userId       String?
+  user         User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  name         String
+  htmlTemplate String   @db.Text
+  isDefault    Boolean  @default(false)
+  createdAt    DateTime @default(now())
+}
+
+model VoiceTranscript {
+  id            String   @id @default(cuid())
+  campaignId    String
+  campaign      Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  rawTranscript String   @db.Text
+  parsedData    Json?
+  type          String   @default("initial") // "initial" or "refinement"
+  createdAt     DateTime @default(now())
+}
+
+model SendLog {
+  id           String   @id @default(cuid())
+  campaignId   String
+  campaign     Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  contactEmail String
+  status       String   // "sent", "skipped_cooldown", "failed"
+  error        String?
+  sentAt       DateTime @default(now())
+}

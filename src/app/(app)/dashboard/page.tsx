@@ -1,0 +1,116 @@
+import { getSession } from "@/lib/auth/session";
+import { redirect } from "next/navigation";
+import Link from "next/link";
+import { db } from "@/lib/db";
+import {
+  Card,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Megaphone, Users, FileText } from "lucide-react";
+
+export default async function DashboardPage() {
+  const session = await getSession();
+  if (!session) redirect("/login");
+
+  const firstName = session.name.split(" ")[0];
+
+  // Fetch real stats from database
+  const [totalCampaigns, emailsSent, upcoming] = await Promise.all([
+    db.campaign.count({
+      where: { userId: session.id },
+    }),
+    db.sendLog.count({
+      where: {
+        status: "sent",
+        campaign: { userId: session.id },
+      },
+    }),
+    db.campaign.count({
+      where: {
+        userId: session.id,
+        status: "scheduled",
+        scheduledAt: { gt: new Date() },
+      },
+    }),
+  ]);
+
+  return (
+    <div className="flex flex-col gap-6">
+      <div>
+        <h1 className="text-2xl font-bold md:text-3xl">
+          Welcome back, {firstName}
+        </h1>
+        <p className="mt-1 text-muted-foreground">
+          Create and manage your voice-powered email campaigns
+        </p>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <Link href="/campaigns/new">
+          <Card className="cursor-pointer transition-all duration-200 hover:shadow-md">
+            <CardHeader>
+              <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-r from-[#F6D365] to-[#FDA085]">
+                <Megaphone className="h-5 w-5 text-white" />
+              </div>
+              <CardTitle className="text-lg">New Campaign</CardTitle>
+              <CardDescription>
+                Create a new campaign using your voice
+              </CardDescription>
+            </CardHeader>
+          </Card>
+        </Link>
+
+        <Link href="/audiences">
+          <Card className="cursor-pointer transition-all duration-200 hover:shadow-md">
+            <CardHeader>
+              <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-r from-[#F6D365] to-[#FDA085]">
+                <Users className="h-5 w-5 text-white" />
+              </div>
+              <CardTitle className="text-lg">Audiences</CardTitle>
+              <CardDescription>
+                Manage your contact lists and audiences
+              </CardDescription>
+            </CardHeader>
+          </Card>
+        </Link>
+
+        <Link href="/templates">
+          <Card className="cursor-pointer transition-all duration-200 hover:shadow-md">
+            <CardHeader>
+              <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-r from-[#F6D365] to-[#FDA085]">
+                <FileText className="h-5 w-5 text-white" />
+              </div>
+              <CardTitle className="text-lg">Templates</CardTitle>
+              <CardDescription>
+                Browse and manage email templates
+              </CardDescription>
+            </CardHeader>
+          </Card>
+        </Link>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-3">
+        <Card>
+          <CardHeader>
+            <CardDescription>Total Campaigns</CardDescription>
+            <CardTitle className="text-3xl">{totalCampaigns}</CardTitle>
+          </CardHeader>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardDescription>Emails Sent</CardDescription>
+            <CardTitle className="text-3xl">{emailsSent}</CardTitle>
+          </CardHeader>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardDescription>Upcoming</CardDescription>
+            <CardTitle className="text-3xl">{upcoming}</CardTitle>
+          </CardHeader>
+        </Card>
+      </div>
+    </div>
+  );
+}

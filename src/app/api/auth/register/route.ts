@@ -1,0 +1,56 @@
+import { NextResponse } from "next/server";
+import { z } from "zod";
+import { hash } from "bcryptjs";
+import { db } from "@/lib/db";
+
+const RegisterSchema = z.object({
+  name: z.string().min(1, "Name is required").max(100),
+  email: z.string().email("Invalid email address"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
+});
+
+export async function POST(req: Request) {
+  const body = await req.json();
+  const parsed = RegisterSchema.safeParse(body);
+
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: parsed.error.flatten().fieldErrors },
+      { status: 400 }
+    );
+  }
+
+  try {
+    const { name, email, password } = parsed.data;
+
+    // Check if user already exists
+    const existingUser = await db.user.findUnique({
+      where: { email },
+    });
+
+    if (existingUser) {
+      return NextResponse.json(
+        { error: "An account with this email already exists" },
+        { status: 409 }
+      );
+    }
+
+    const passwordHash = await hash(password, 12);
+
+    const user = await db.user.create({
+      data: {
+        name,
+        email,
+        passwordHash,
+      },
+    });
+
+    return NextResponse.json({ userId: user.id }, { status: 201 });
+  } catch (err) {
+    console.error("[POST /api/auth/register]", err);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
+  }
+}
