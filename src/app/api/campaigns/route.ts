@@ -33,8 +33,8 @@ export async function GET() {
 
 const createCampaignSchema = z.object({
   name: z.string().min(1, "Campaign name is required"),
-  subjectLine: z.string().min(1, "Subject line is required"),
-  htmlBody: z.string().min(1, "HTML body is required"),
+  subjectLine: z.string().optional().default(""),
+  htmlBody: z.string().optional().default(""),
   textBody: z.string().optional().default(""),
   status: z.enum(["draft", "scheduled"]).default("draft"),
 });

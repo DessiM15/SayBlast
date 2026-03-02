@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { hash } from "bcryptjs";
 import { db } from "@/lib/db";
+import { createClient } from "@supabase/supabase-js";
 
 const RegisterSchema = z.object({
   name: z.string().min(1, "Name is required").max(100),
@@ -44,6 +45,19 @@ export async function POST(req: Request) {
         passwordHash,
       },
     });
+
+    // Auto-confirm the Supabase Auth user's email
+    const supabaseAdmin = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+    const { data: authUsers } = await supabaseAdmin.auth.admin.listUsers();
+    const authUser = authUsers?.users.find((u) => u.email === email);
+    if (authUser) {
+      await supabaseAdmin.auth.admin.updateUserById(authUser.id, {
+        email_confirm: true,
+      });
+    }
 
     return NextResponse.json({ userId: user.id }, { status: 201 });
   } catch (err) {

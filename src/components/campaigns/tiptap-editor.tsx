@@ -3,7 +3,7 @@
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Link from "@tiptap/extension-link";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Bold,
@@ -15,6 +15,8 @@ import {
   Link as LinkIcon,
   Undo2,
   Redo2,
+  Code,
+  Eye,
 } from "lucide-react";
 
 interface TiptapEditorProps {
@@ -22,7 +24,25 @@ interface TiptapEditorProps {
   onChange: (html: string) => void;
 }
 
+/**
+ * Detect if HTML is complex email template HTML that Tiptap can't handle.
+ * Email templates use tables, doctypes, inline styles, etc.
+ */
+function isComplexHtml(html: string): boolean {
+  if (!html) return false;
+  const lower = html.toLowerCase();
+  return (
+    lower.includes("<table") ||
+    lower.includes("<!doctype") ||
+    lower.includes("<html") ||
+    lower.includes("<head") ||
+    lower.includes("<style")
+  );
+}
+
 export default function TiptapEditor({ content, onChange }: TiptapEditorProps) {
+  const [sourceMode, setSourceMode] = useState(() => isComplexHtml(content));
+
   const editor = useEditor({
     extensions: [
       StarterKit,
@@ -33,10 +53,13 @@ export default function TiptapEditor({ content, onChange }: TiptapEditorProps) {
         },
       }),
     ],
-    content,
+    content: sourceMode ? "" : content,
     editable: true,
+    immediatelyRender: false,
     onUpdate: ({ editor: ed }) => {
-      onChange(ed.getHTML());
+      if (!sourceMode) {
+        onChange(ed.getHTML());
+      }
     },
     editorProps: {
       attributes: {
@@ -47,10 +70,54 @@ export default function TiptapEditor({ content, onChange }: TiptapEditorProps) {
   });
 
   useEffect(() => {
-    if (editor && content !== editor.getHTML()) {
+    if (sourceMode || !editor) return;
+    if (content !== editor.getHTML()) {
       editor.commands.setContent(content, { emitUpdate: false });
     }
-  }, [content, editor]);
+  }, [content, editor, sourceMode]);
+
+  // Source mode: raw HTML textarea
+  if (sourceMode) {
+    return (
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <p className="flex items-center gap-1 text-xs text-muted-foreground">
+            <Code className="h-3 w-3" />
+            HTML source editor
+          </p>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-6 gap-1 px-2 text-xs"
+            onClick={() => {
+              if (!isComplexHtml(content)) {
+                setSourceMode(false);
+                if (editor) {
+                  editor.commands.setContent(content, { emitUpdate: false });
+                }
+              }
+            }}
+            disabled={isComplexHtml(content)}
+            title={
+              isComplexHtml(content)
+                ? "Complex HTML must be edited in source mode"
+                : "Switch to rich text editor"
+            }
+          >
+            <Eye className="h-3 w-3" />
+            Visual
+          </Button>
+        </div>
+        <textarea
+          value={content}
+          onChange={(e) => onChange(e.target.value)}
+          rows={12}
+          className="w-full rounded-md border bg-background px-3 py-2 font-mono text-xs ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+        />
+      </div>
+    );
+  }
 
   if (!editor) {
     return (
@@ -180,6 +247,19 @@ export default function TiptapEditor({ content, onChange }: TiptapEditorProps) {
           disabled={!editor.can().redo()}
         >
           <Redo2 className="h-3.5 w-3.5" />
+        </Button>
+
+        <div className="mx-1 h-4 w-px bg-border" />
+
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="h-7 gap-1 px-2 text-xs"
+          onClick={() => setSourceMode(true)}
+        >
+          <Code className="h-3 w-3" />
+          Source
         </Button>
       </div>
 

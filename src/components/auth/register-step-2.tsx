@@ -20,22 +20,49 @@ export default function RegisterStep2({
   const [error, setError] = useState("");
   const [isPending, setIsPending] = useState(false);
 
-  async function handleGmailConnect() {
-    // TODO: Implement Gmail OAuth flow when Google credentials are ready
-    // This would redirect to Google OAuth consent screen requesting gmail.send scope
-    // After callback, tokens are stored on the user record
-    setError(
-      "Gmail OAuth requires Google Cloud Console credentials. Please use SMTP for now, or configure Google OAuth credentials in your environment."
-    );
+  function handleGmailConnect() {
+    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+    if (!clientId) {
+      setError(
+        "Gmail OAuth is not configured. Set NEXT_PUBLIC_GOOGLE_CLIENT_ID in your environment."
+      );
+      return;
+    }
+
+    const redirectUri = `${window.location.origin}/api/auth/callback/google-email`;
+    const scope = "https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/userinfo.email";
+    const params = new URLSearchParams({
+      client_id: clientId,
+      redirect_uri: redirectUri,
+      response_type: "code",
+      scope,
+      access_type: "offline",
+      prompt: "consent",
+    });
+
+    window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
   }
 
-  async function handleOutlookConnect() {
-    // TODO: Implement Outlook OAuth flow when Azure credentials are ready
-    // This would redirect to Microsoft OAuth consent screen requesting Mail.Send scope
-    // After callback, tokens are stored on the user record
-    setError(
-      "Outlook OAuth requires Azure Portal credentials. Please use SMTP for now, or configure Microsoft OAuth credentials in your environment."
-    );
+  function handleOutlookConnect() {
+    const clientId = process.env.NEXT_PUBLIC_MICROSOFT_CLIENT_ID;
+    if (!clientId) {
+      setError(
+        "Outlook OAuth is not configured. Set NEXT_PUBLIC_MICROSOFT_CLIENT_ID in your environment."
+      );
+      return;
+    }
+
+    const redirectUri = `${window.location.origin}/api/auth/callback/microsoft-email`;
+    const scope = "https://outlook.office365.com/Mail.Send offline_access openid email";
+    const params = new URLSearchParams({
+      client_id: clientId,
+      redirect_uri: redirectUri,
+      response_type: "code",
+      scope,
+      prompt: "consent",
+    });
+
+    window.location.href = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?${params.toString()}`;
   }
 
   async function handleSmtpComplete() {

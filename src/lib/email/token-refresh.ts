@@ -30,30 +30,37 @@ async function refreshGmailToken(user: User): Promise<User> {
     throw new Error("No refresh token available for Gmail");
   }
 
-  // TODO: Implement when Google OAuth credentials are configured
-  // const response = await fetch("https://oauth2.googleapis.com/token", {
-  //   method: "POST",
-  //   headers: { "Content-Type": "application/x-www-form-urlencoded" },
-  //   body: new URLSearchParams({
-  //     client_id: process.env.GOOGLE_CLIENT_ID!,
-  //     client_secret: process.env.GOOGLE_CLIENT_SECRET!,
-  //     refresh_token: user.emailRefreshToken,
-  //     grant_type: "refresh_token",
-  //   }),
-  // });
-  //
-  // const data = await response.json();
-  // const updatedUser = await db.user.update({
-  //   where: { id: user.id },
-  //   data: {
-  //     emailAccessToken: data.access_token,
-  //     emailTokenExpiry: new Date(Date.now() + data.expires_in * 1000),
-  //   },
-  // });
-  // return updatedUser;
+  const response = await fetch("https://oauth2.googleapis.com/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      client_id: process.env.GOOGLE_CLIENT_ID!,
+      client_secret: process.env.GOOGLE_CLIENT_SECRET!,
+      refresh_token: user.emailRefreshToken,
+      grant_type: "refresh_token",
+    }),
+  });
 
-  console.warn("Gmail token refresh not yet implemented");
-  return user;
+  if (!response.ok) {
+    const errorData: unknown = await response.json();
+    console.error("Gmail token refresh failed:", errorData);
+    throw new Error("Failed to refresh Gmail token");
+  }
+
+  const data = (await response.json()) as {
+    access_token: string;
+    expires_in: number;
+  };
+
+  const updatedUser = await db.user.update({
+    where: { id: user.id },
+    data: {
+      emailAccessToken: data.access_token,
+      emailTokenExpiry: new Date(Date.now() + data.expires_in * 1000),
+    },
+  });
+
+  return updatedUser;
 }
 
 async function refreshOutlookToken(user: User): Promise<User> {
@@ -61,33 +68,42 @@ async function refreshOutlookToken(user: User): Promise<User> {
     throw new Error("No refresh token available for Outlook");
   }
 
-  // TODO: Implement when Microsoft OAuth credentials are configured
-  // const response = await fetch(
-  //   "https://login.microsoftonline.com/common/oauth2/v2.0/token",
-  //   {
-  //     method: "POST",
-  //     headers: { "Content-Type": "application/x-www-form-urlencoded" },
-  //     body: new URLSearchParams({
-  //       client_id: process.env.MICROSOFT_CLIENT_ID!,
-  //       client_secret: process.env.MICROSOFT_CLIENT_SECRET!,
-  //       refresh_token: user.emailRefreshToken,
-  //       grant_type: "refresh_token",
-  //       scope: "https://outlook.office365.com/Mail.Send offline_access",
-  //     }),
-  //   }
-  // );
-  //
-  // const data = await response.json();
-  // const updatedUser = await db.user.update({
-  //   where: { id: user.id },
-  //   data: {
-  //     emailAccessToken: data.access_token,
-  //     emailRefreshToken: data.refresh_token ?? user.emailRefreshToken,
-  //     emailTokenExpiry: new Date(Date.now() + data.expires_in * 1000),
-  //   },
-  // });
-  // return updatedUser;
+  const response = await fetch(
+    "https://login.microsoftonline.com/common/oauth2/v2.0/token",
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        client_id: process.env.MICROSOFT_CLIENT_ID!,
+        client_secret: process.env.MICROSOFT_CLIENT_SECRET!,
+        refresh_token: user.emailRefreshToken,
+        grant_type: "refresh_token",
+        scope: "https://outlook.office365.com/Mail.Send offline_access",
+      }),
+    }
+  );
 
-  console.warn("Outlook token refresh not yet implemented");
-  return user;
+  if (!response.ok) {
+    const errorData: unknown = await response.json();
+    console.error("Outlook token refresh failed:", errorData);
+    throw new Error("Failed to refresh Outlook token");
+  }
+
+  const data = (await response.json()) as {
+    access_token: string;
+    refresh_token?: string;
+    expires_in: number;
+  };
+
+  const updatedUser = await db.user.update({
+    where: { id: user.id },
+    data: {
+      emailAccessToken: data.access_token,
+      // Microsoft may rotate refresh tokens
+      emailRefreshToken: data.refresh_token ?? user.emailRefreshToken,
+      emailTokenExpiry: new Date(Date.now() + data.expires_in * 1000),
+    },
+  });
+
+  return updatedUser;
 }
