@@ -15,6 +15,7 @@ export const mockDb = {
   contact: {
     create: vi.fn(),
     update: vi.fn(),
+    updateMany: vi.fn(),
   },
   audienceList: {
     findFirst: vi.fn(),
@@ -22,6 +23,7 @@ export const mockDb = {
   sendLog: {
     findFirst: vi.fn(),
     create: vi.fn(),
+    createMany: vi.fn(),
   },
 };
 

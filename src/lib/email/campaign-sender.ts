@@ -88,6 +88,10 @@ export async function sendCampaign(campaignId: string): Promise<SendResult> {
     return result;
   }
 
+  // Accumulators for batch DB operations
+  const sendLogEntries: { campaignId: string; contactEmail: string; status: SendLogStatus; error: string | null }[] = [];
+  const sentContactIds: string[] = [];
+
   // Process each contact sequentially
   for (let i = 0; i < contacts.length; i++) {
     const contact = contacts[i];
@@ -96,22 +100,13 @@ export async function sendCampaign(campaignId: string): Promise<SendResult> {
     const cooldown = await checkCooldown(contact.email);
 
     if (!cooldown.allowed) {
-      // Skipped due to cooldown
-      await db.sendLog.create({
-        data: {
-          campaignId,
-          contactEmail: contact.email,
-          status: SendLogStatus.skipped_cooldown,
-          error: cooldown.reason ?? null,
-        },
+      sendLogEntries.push({
+        campaignId,
+        contactEmail: contact.email,
+        status: SendLogStatus.skipped_cooldown,
+        error: cooldown.reason ?? null,
       });
       result.skipped++;
-
-      await db.campaign.update({
-        where: { id: campaignId },
-        data: { skippedCount: { increment: 1 } },
-      });
-
       continue;
     }
 
@@ -125,40 +120,23 @@ export async function sendCampaign(campaignId: string): Promise<SendResult> {
         text: campaign.textBody ?? undefined,
       });
 
-      // Log success
-      await db.sendLog.create({
-        data: {
-          campaignId,
-          contactEmail: contact.email,
-          status: SendLogStatus.sent,
-        },
+      sendLogEntries.push({
+        campaignId,
+        contactEmail: contact.email,
+        status: SendLogStatus.sent,
+        error: null,
       });
-
-      // Update contact's lastEmailedAt
-      await db.contact.update({
-        where: { id: contact.id },
-        data: { lastEmailedAt: new Date() },
-      });
-
-      // Increment sent count
-      await db.campaign.update({
-        where: { id: campaignId },
-        data: { sentCount: { increment: 1 } },
-      });
-
+      sentContactIds.push(contact.id);
       result.sent++;
     } catch (err) {
       const message = err instanceof Error ? err.message : "Send failed";
 
-      await db.sendLog.create({
-        data: {
-          campaignId,
-          contactEmail: contact.email,
-          status: SendLogStatus.failed,
-          error: message,
-        },
+      sendLogEntries.push({
+        campaignId,
+        contactEmail: contact.email,
+        status: SendLogStatus.failed,
+        error: message,
       });
-
       result.failed++;
       result.errors.push(`${contact.email}: ${message}`);
     }
@@ -169,7 +147,18 @@ export async function sendCampaign(campaignId: string): Promise<SendResult> {
     }
   }
 
-  // Update campaign final status
+  // Batch DB operations: ~3 calls instead of ~3N
+  if (sendLogEntries.length > 0) {
+    await db.sendLog.createMany({ data: sendLogEntries });
+  }
+
+  if (sentContactIds.length > 0) {
+    await db.contact.updateMany({
+      where: { id: { in: sentContactIds } },
+      data: { lastEmailedAt: new Date() },
+    });
+  }
+
   const finalStatus = result.sent === 0 && result.failed > 0 ? CampaignStatus.failed : CampaignStatus.sent;
 
   await db.campaign.update({
@@ -178,6 +167,8 @@ export async function sendCampaign(campaignId: string): Promise<SendResult> {
       status: finalStatus,
       sentAt: new Date(),
       totalRecipients,
+      sentCount: result.sent,
+      skippedCount: result.skipped,
     },
   });
 
