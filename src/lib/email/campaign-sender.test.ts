@@ -1,6 +1,7 @@
 import { mockDb } from "@/test/mocks/db";
 import { baseUser } from "@/test/fixtures/users";
 import { sendCampaign } from "./campaign-sender";
+import { CampaignStatus } from "@/generated/prisma/client";
 
 // Use vi.hoisted to avoid hoisting issues with vi.mock factories
 const { mockSendMail, mockCheckCooldown } = vi.hoisted(() => ({
@@ -21,7 +22,7 @@ vi.mock("@/lib/email/anti-spam", () => ({
 function makeCampaign(overrides: Record<string, unknown> = {}) {
   return {
     id: "campaign-1",
-    status: "sending",
+    status: CampaignStatus.sending,
     htmlBody: "<p>Hello</p>",
     textBody: "Hello",
     subjectLine: "Test Subject",
@@ -57,7 +58,7 @@ describe("sendCampaign", () => {
   });
 
   it("returns error when campaign is not in sending status", async () => {
-    mockDb.campaign.findUnique.mockResolvedValue(makeCampaign({ status: "draft" }));
+    mockDb.campaign.findUnique.mockResolvedValue(makeCampaign({ status: CampaignStatus.draft }));
 
     const result = await sendCampaign("campaign-1");
 
@@ -72,7 +73,7 @@ describe("sendCampaign", () => {
 
     expect(result.errors).toContain("Campaign has no HTML body");
     expect(mockDb.campaign.update).toHaveBeenCalledWith(
-      expect.objectContaining({ data: { status: "failed" } })
+      expect.objectContaining({ data: { status: CampaignStatus.failed } })
     );
   });
 
@@ -153,7 +154,7 @@ describe("sendCampaign", () => {
     expect(result.sent).toBe(0);
     expect(result.failed).toBe(2);
     const lastUpdateCall = mockDb.campaign.update.mock.calls.at(-1);
-    expect(lastUpdateCall?.[0].data.status).toBe("failed");
+    expect(lastUpdateCall?.[0].data.status).toBe(CampaignStatus.failed);
   });
 
   it("fails campaign when transport creation throws", async () => {
@@ -167,7 +168,7 @@ describe("sendCampaign", () => {
 
     expect(result.errors).toContain("No credentials");
     expect(mockDb.campaign.update).toHaveBeenCalledWith(
-      expect.objectContaining({ data: { status: "failed" } })
+      expect.objectContaining({ data: { status: CampaignStatus.failed } })
     );
   });
 });

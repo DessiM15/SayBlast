@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireSession } from "@/lib/auth/session";
 import { db } from "@/lib/db";
 import { sendCampaign } from "@/lib/email/campaign-sender";
+import { CampaignStatus } from "@/generated/prisma/client";
 
 export async function POST(
   _request: NextRequest,
@@ -29,14 +30,14 @@ export async function POST(
     }
 
     // Validate campaign is ready to send
-    if (campaign.status === "sending") {
+    if (campaign.status === CampaignStatus.sending) {
       return NextResponse.json(
         { error: "Campaign is already being sent" },
         { status: 409 }
       );
     }
 
-    if (campaign.status === "sent") {
+    if (campaign.status === CampaignStatus.sent) {
       return NextResponse.json(
         { error: "Campaign has already been sent" },
         { status: 409 }
@@ -75,7 +76,7 @@ export async function POST(
     await db.campaign.update({
       where: { id },
       data: {
-        status: "sending",
+        status: CampaignStatus.sending,
         scheduledAt: new Date(),
       },
     });

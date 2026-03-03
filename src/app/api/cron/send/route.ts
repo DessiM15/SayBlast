@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { sendCampaign } from "@/lib/email/campaign-sender";
 import type { SendResult } from "@/lib/email/campaign-sender";
+import { CampaignStatus } from "@/generated/prisma/client";
 
 export async function POST(request: NextRequest) {
   try {
@@ -28,7 +29,7 @@ export async function POST(request: NextRequest) {
     const now = new Date();
     const dueCampaigns = await db.campaign.findMany({
       where: {
-        status: "scheduled",
+        status: CampaignStatus.scheduled,
         scheduledAt: { lte: now },
       },
       select: { id: true, name: true },
@@ -47,7 +48,7 @@ export async function POST(request: NextRequest) {
       // Set status to "sending" before processing
       await db.campaign.update({
         where: { id: campaign.id },
-        data: { status: "sending" },
+        data: { status: CampaignStatus.sending },
       });
 
       const result = await sendCampaign(campaign.id);

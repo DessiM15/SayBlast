@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
+import { CampaignStatus } from "@/generated/prisma/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -56,7 +57,7 @@ export default function CampaignEditPage() {
     subjectLine: "",
     htmlBody: "",
     textBody: "",
-    status: "draft",
+    status: CampaignStatus.draft,
     audienceListId: null,
     scheduledAt: null,
   });

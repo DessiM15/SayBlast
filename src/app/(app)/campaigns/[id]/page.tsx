@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
+import { CampaignStatus, SendLogStatus } from "@/generated/prisma/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -59,11 +60,11 @@ interface CampaignDetail {
 type PageStatus = "loading" | "ready" | "error";
 
 const STATUS_COLORS: Record<string, string> = {
-  draft: "bg-gray-100 text-gray-800",
-  scheduled: "bg-blue-100 text-blue-800",
-  sending: "bg-yellow-100 text-yellow-800",
-  sent: "bg-green-100 text-green-800",
-  failed: "bg-red-100 text-red-800",
+  [CampaignStatus.draft]: "bg-gray-100 text-gray-800",
+  [CampaignStatus.scheduled]: "bg-blue-100 text-blue-800",
+  [CampaignStatus.sending]: "bg-yellow-100 text-yellow-800",
+  [CampaignStatus.sent]: "bg-green-100 text-green-800",
+  [CampaignStatus.failed]: "bg-red-100 text-red-800",
 };
 
 function formatDate(dateStr: string): string {
@@ -186,7 +187,7 @@ export default function CampaignDetailPage() {
       : 0;
 
   const canSend =
-    (campaign.status === "draft" || campaign.status === "scheduled") &&
+    (campaign.status === CampaignStatus.draft || campaign.status === CampaignStatus.scheduled) &&
     campaign.subjectLine &&
     campaign.htmlBody &&
     campaign.audienceListId;
@@ -249,7 +250,7 @@ export default function CampaignDetailPage() {
       </div>
 
       {/* Warning: all recipients skipped */}
-      {campaign.status === "sent" &&
+      {campaign.status === CampaignStatus.sent &&
         campaign.sentCount === 0 &&
         campaign.skippedCount > 0 && (
           <div className="flex items-start gap-3 rounded-lg border border-yellow-200 bg-yellow-50 p-4">
@@ -434,14 +435,14 @@ export default function CampaignDetailPage() {
                         <Badge
                           variant="secondary"
                           className={
-                            log.status === "sent"
+                            log.status === SendLogStatus.sent
                               ? "bg-green-100 text-green-800"
-                              : log.status === "skipped_cooldown"
+                              : log.status === SendLogStatus.skipped_cooldown
                                 ? "bg-yellow-100 text-yellow-800"
                                 : "bg-red-100 text-red-800"
                           }
                         >
-                          {log.status === "skipped_cooldown"
+                          {log.status === SendLogStatus.skipped_cooldown
                             ? "skipped"
                             : log.status}
                         </Badge>
@@ -464,7 +465,7 @@ export default function CampaignDetailPage() {
       {/* Empty state for unsent campaigns */}
       {campaign.totalRecipients === 0 &&
         campaign.sendLog.length === 0 &&
-        campaign.status !== "sending" && (
+        campaign.status !== CampaignStatus.sending && (
           <Card>
             <CardContent className="flex flex-col items-center gap-3 py-12">
               <Mail className="h-10 w-10 text-muted-foreground/50" />

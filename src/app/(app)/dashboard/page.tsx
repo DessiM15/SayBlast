@@ -2,6 +2,7 @@ import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { db } from "@/lib/db";
+import { CampaignStatus, SendLogStatus } from "@/generated/prisma/client";
 import {
   Card,
   CardDescription,
@@ -23,14 +24,14 @@ export default async function DashboardPage() {
     }),
     db.sendLog.count({
       where: {
-        status: "sent",
+        status: SendLogStatus.sent,
         campaign: { userId: session.id },
       },
     }),
     db.campaign.count({
       where: {
         userId: session.id,
-        status: "scheduled",
+        status: CampaignStatus.scheduled,
         scheduledAt: { gt: new Date() },
       },
     }),

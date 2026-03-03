@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { CampaignStatus } from "@/generated/prisma/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, RotateCcw, Keyboard } from "lucide-react";
@@ -118,7 +119,7 @@ export default function NewCampaignPage() {
           subjectLine: selectedSubjectLine,
           htmlBody: campaignData.htmlBody,
           textBody: campaignData.textBody,
-          status: "draft",
+          status: CampaignStatus.draft,
         }),
       });
 

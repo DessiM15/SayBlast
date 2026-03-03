@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { CampaignStatus } from "@/generated/prisma/client";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -56,7 +57,7 @@ export default function TemplatesPage() {
           subjectLine: "",
           htmlBody: template.htmlTemplate,
           textBody: "",
-          status: "draft",
+          status: CampaignStatus.draft,
         }),
       });
 

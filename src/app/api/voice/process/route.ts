@@ -3,6 +3,7 @@ import { z } from "zod/v4";
 import { requireSession } from "@/lib/auth/session";
 import { db } from "@/lib/db";
 import { processTranscript } from "@/lib/ai/process-transcript";
+import { CampaignStatus, TranscriptType } from "@/generated/prisma/client";
 
 const requestSchema = z.object({
   transcript: z.string().min(1, "Transcript is required"),
@@ -32,7 +33,7 @@ export async function POST(request: NextRequest) {
           create: {
             userId: session.id,
             name: campaignData.campaignName,
-            status: "draft",
+            status: CampaignStatus.draft,
             subjectLine: campaignData.subjectLines[0] ?? "",
             htmlBody: campaignData.htmlBody,
             textBody: campaignData.textBody,
@@ -40,7 +41,7 @@ export async function POST(request: NextRequest) {
         },
         rawTranscript: transcript,
         parsedData: JSON.parse(JSON.stringify(campaignData)),
-        type: "initial",
+        type: TranscriptType.initial,
       },
       select: {
         campaignId: true,

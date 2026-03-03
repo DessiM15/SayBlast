@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod/v4";
 import { requireSession } from "@/lib/auth/session";
 import { db } from "@/lib/db";
+import { CampaignStatus } from "@/generated/prisma/client";
 
 export async function GET() {
   try {
@@ -36,7 +37,7 @@ const createCampaignSchema = z.object({
   subjectLine: z.string().optional().default(""),
   htmlBody: z.string().optional().default(""),
   textBody: z.string().optional().default(""),
-  status: z.enum(["draft", "scheduled"]).default("draft"),
+  status: z.enum([CampaignStatus.draft, CampaignStatus.scheduled]).default(CampaignStatus.draft),
 });
 
 export async function POST(request: NextRequest) {

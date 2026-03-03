@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { createEmailTransport } from "@/lib/email/transport-factory";
 import { checkCooldown } from "@/lib/email/anti-spam";
+import { CampaignStatus, SendLogStatus } from "@/generated/prisma/client";
 
 export interface SendResult {
   campaignId: string;
@@ -47,7 +48,7 @@ export async function sendCampaign(campaignId: string): Promise<SendResult> {
     return result;
   }
 
-  if (campaign.status !== "sending") {
+  if (campaign.status !== CampaignStatus.sending) {
     result.errors.push(`Campaign is not in "sending" status (current: ${campaign.status})`);
     return result;
   }
@@ -56,7 +57,7 @@ export async function sendCampaign(campaignId: string): Promise<SendResult> {
     result.errors.push("Campaign has no HTML body");
     await db.campaign.update({
       where: { id: campaignId },
-      data: { status: "failed" },
+      data: { status: CampaignStatus.failed },
     });
     return result;
   }
@@ -65,7 +66,7 @@ export async function sendCampaign(campaignId: string): Promise<SendResult> {
     result.errors.push("Campaign has no audience or audience has no contacts");
     await db.campaign.update({
       where: { id: campaignId },
-      data: { status: "failed" },
+      data: { status: CampaignStatus.failed },
     });
     return result;
   }
@@ -82,7 +83,7 @@ export async function sendCampaign(campaignId: string): Promise<SendResult> {
     result.errors.push(message);
     await db.campaign.update({
       where: { id: campaignId },
-      data: { status: "failed" },
+      data: { status: CampaignStatus.failed },
     });
     return result;
   }
@@ -100,7 +101,7 @@ export async function sendCampaign(campaignId: string): Promise<SendResult> {
         data: {
           campaignId,
           contactEmail: contact.email,
-          status: "skipped_cooldown",
+          status: SendLogStatus.skipped_cooldown,
           error: cooldown.reason ?? null,
         },
       });
@@ -129,7 +130,7 @@ export async function sendCampaign(campaignId: string): Promise<SendResult> {
         data: {
           campaignId,
           contactEmail: contact.email,
-          status: "sent",
+          status: SendLogStatus.sent,
         },
       });
 
@@ -153,7 +154,7 @@ export async function sendCampaign(campaignId: string): Promise<SendResult> {
         data: {
           campaignId,
           contactEmail: contact.email,
-          status: "failed",
+          status: SendLogStatus.failed,
           error: message,
         },
       });
@@ -169,7 +170,7 @@ export async function sendCampaign(campaignId: string): Promise<SendResult> {
   }
 
   // Update campaign final status
-  const finalStatus = result.sent === 0 && result.failed > 0 ? "failed" : "sent";
+  const finalStatus = result.sent === 0 && result.failed > 0 ? CampaignStatus.failed : CampaignStatus.sent;
 
   await db.campaign.update({
     where: { id: campaignId },

@@ -3,6 +3,7 @@ import { z } from "zod/v4";
 import { requireSession } from "@/lib/auth/session";
 import { db } from "@/lib/db";
 import { refineCampaign } from "@/lib/ai/refine-campaign";
+import { TranscriptType } from "@/generated/prisma/client";
 
 const requestSchema = z.object({
   campaignId: z.string().min(1, "Campaign ID is required"),
@@ -51,7 +52,7 @@ export async function POST(request: NextRequest) {
         campaignId,
         rawTranscript: transcript,
         parsedData: JSON.parse(JSON.stringify(refinedData)),
-        type: "refinement",
+        type: TranscriptType.refinement,
       },
     });
 

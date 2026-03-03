@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import { SendLogStatus } from "@/generated/prisma/client";
 
 const COOLDOWN_HOURS = 72;
 const COOLDOWN_MS = COOLDOWN_HOURS * 60 * 60 * 1000;
@@ -21,7 +22,7 @@ export async function checkCooldown(
   const recentSend = await db.sendLog.findFirst({
     where: {
       contactEmail,
-      status: "sent",
+      status: SendLogStatus.sent,
       sentAt: { gte: cutoff },
     },
     select: { sentAt: true },
