@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
-import { CampaignStatus, SendLogStatus } from "@/generated/prisma/client";
+import { CampaignStatus } from "@/generated/prisma/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -12,7 +12,6 @@ import {
   CardContent,
   CardDescription,
   CardHeader,
-  CardTitle,
 } from "@/components/ui/card";
 import {
   ArrowLeft,
@@ -21,19 +20,13 @@ import {
   Send,
   Mail,
   ShieldOff,
-  AlertTriangle,
   Users,
   Calendar,
   CheckCircle2,
 } from "lucide-react";
-
-interface SendLogEntry {
-  id: string;
-  contactEmail: string;
-  status: string;
-  error: string | null;
-  sentAt: string;
-}
+import SendProgress from "@/components/campaigns/send-progress";
+import SendLogTable from "@/components/campaigns/send-log-table";
+import type { SendLogEntry } from "@/components/campaigns/send-log-table";
 
 interface CampaignDetail {
   id: string;
@@ -174,17 +167,6 @@ export default function CampaignDetailPage() {
       </div>
     );
   }
-
-  const failedCount =
-    campaign.totalRecipients - campaign.sentCount - campaign.skippedCount;
-  const progressPercent =
-    campaign.totalRecipients > 0
-      ? Math.round(
-          ((campaign.sentCount + campaign.skippedCount + Math.max(0, failedCount)) /
-            campaign.totalRecipients) *
-            100
-        )
-      : 0;
 
   const canSend =
     (campaign.status === CampaignStatus.draft || campaign.status === CampaignStatus.scheduled) &&
@@ -333,133 +315,16 @@ export default function CampaignDetailPage() {
 
       {/* Send Stats */}
       {campaign.totalRecipients > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Send Progress</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Progress bar */}
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Progress</span>
-                <span className="font-medium">{progressPercent}%</span>
-              </div>
-              <div className="h-3 w-full overflow-hidden rounded-full bg-muted">
-                <div
-                  className="flex h-full transition-all duration-500"
-                  style={{ width: `${progressPercent}%` }}
-                >
-                  {campaign.sentCount > 0 && (
-                    <div
-                      className="bg-green-500"
-                      style={{
-                        width: `${(campaign.sentCount / campaign.totalRecipients) * 100}%`,
-                      }}
-                    />
-                  )}
-                  {campaign.skippedCount > 0 && (
-                    <div
-                      className="bg-yellow-500"
-                      style={{
-                        width: `${(campaign.skippedCount / campaign.totalRecipients) * 100}%`,
-                      }}
-                    />
-                  )}
-                  {failedCount > 0 && (
-                    <div
-                      className="bg-red-500"
-                      style={{
-                        width: `${(failedCount / campaign.totalRecipients) * 100}%`,
-                      }}
-                    />
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Stats row */}
-            <div className="grid grid-cols-3 gap-4 text-center">
-              <div className="rounded-lg bg-green-50 p-3">
-                <div className="flex items-center justify-center gap-1 text-green-700">
-                  <Mail className="h-4 w-4" />
-                  <span className="text-xl font-bold">{campaign.sentCount}</span>
-                </div>
-                <p className="mt-1 text-xs text-green-600">Sent</p>
-              </div>
-              <div className="rounded-lg bg-yellow-50 p-3">
-                <div className="flex items-center justify-center gap-1 text-yellow-700">
-                  <ShieldOff className="h-4 w-4" />
-                  <span className="text-xl font-bold">{campaign.skippedCount}</span>
-                </div>
-                <p className="mt-1 text-xs text-yellow-600">Skipped (Cooldown)</p>
-              </div>
-              <div className="rounded-lg bg-red-50 p-3">
-                <div className="flex items-center justify-center gap-1 text-red-700">
-                  <AlertTriangle className="h-4 w-4" />
-                  <span className="text-xl font-bold">{Math.max(0, failedCount)}</span>
-                </div>
-                <p className="mt-1 text-xs text-red-600">Failed</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <SendProgress
+          sentCount={campaign.sentCount}
+          skippedCount={campaign.skippedCount}
+          totalRecipients={campaign.totalRecipients}
+        />
       )}
 
       {/* Send Log */}
       {campaign.sendLog.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Send Log</CardTitle>
-            <CardDescription>
-              {campaign.sendLog.length} entries
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b text-left text-muted-foreground">
-                    <th className="pb-2 pr-4 font-medium">Email</th>
-                    <th className="pb-2 pr-4 font-medium">Status</th>
-                    <th className="pb-2 pr-4 font-medium">Time</th>
-                    <th className="pb-2 font-medium">Error</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {campaign.sendLog.map((log) => (
-                    <tr key={log.id} className="border-b last:border-0">
-                      <td className="py-2 pr-4 font-mono text-xs">
-                        {log.contactEmail}
-                      </td>
-                      <td className="py-2 pr-4">
-                        <Badge
-                          variant="secondary"
-                          className={
-                            log.status === SendLogStatus.sent
-                              ? "bg-green-100 text-green-800"
-                              : log.status === SendLogStatus.skipped_cooldown
-                                ? "bg-yellow-100 text-yellow-800"
-                                : "bg-red-100 text-red-800"
-                          }
-                        >
-                          {log.status === SendLogStatus.skipped_cooldown
-                            ? "skipped"
-                            : log.status}
-                        </Badge>
-                      </td>
-                      <td className="py-2 pr-4 text-xs text-muted-foreground">
-                        {formatDate(log.sentAt)}
-                      </td>
-                      <td className="py-2 text-xs text-destructive">
-                        {log.error ?? "—"}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
+        <SendLogTable entries={campaign.sendLog} />
       )}
 
       {/* Empty state for unsent campaigns */}

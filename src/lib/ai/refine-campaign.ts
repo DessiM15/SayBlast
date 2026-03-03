@@ -1,19 +1,8 @@
 import Anthropic from "@anthropic-ai/sdk";
-import { z } from "zod/v4";
 import {
+  campaignGenerationSchema,
   type CampaignGeneration,
 } from "./process-transcript";
-
-const campaignGenerationSchema = z.object({
-  campaignName: z.string(),
-  subjectLines: z.array(z.string()).min(1).max(3),
-  htmlBody: z.string(),
-  textBody: z.string(),
-  targetAudience: z.string(),
-  tone: z.string(),
-  cta: z.string(),
-  keyPoints: z.array(z.string()),
-});
 
 export interface CampaignRefinementInput {
   name: string;

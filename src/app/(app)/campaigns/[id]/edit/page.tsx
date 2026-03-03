@@ -12,14 +12,11 @@ import {
   Loader2,
   Save,
   Check,
-  X,
 } from "lucide-react";
 import EditorPanel from "@/components/campaigns/editor-panel";
 import type { CampaignEditorData } from "@/components/campaigns/editor-panel";
 import EmailPreview from "@/components/campaigns/email-preview";
-import MicButton from "@/components/voice/mic-button";
-import TranscriptDisplay from "@/components/voice/transcript-display";
-import { useVoiceInput } from "@/hooks/useVoiceInput";
+import VoiceRefinePanel from "@/components/campaigns/voice-refine-panel";
 
 interface CampaignApiResponse {
   campaign: {
@@ -31,15 +28,6 @@ interface CampaignApiResponse {
     textBody: string | null;
     audienceListId: string | null;
     scheduledAt: string | null;
-  };
-}
-
-interface RefineApiResponse {
-  campaign: {
-    campaignName: string;
-    subjectLines: string[];
-    htmlBody: string;
-    textBody: string;
   };
 }
 
@@ -69,18 +57,6 @@ export default function CampaignEditPage() {
 
   // Voice refinement state
   const [isRefineMode, setIsRefineMode] = useState(false);
-  const [isRefining, setIsRefining] = useState(false);
-  const {
-    startListening,
-    stopListening,
-    transcript: voiceTranscript,
-    interimTranscript,
-    isListening,
-    isSupported: voiceSupported,
-    error: voiceError,
-    resetTranscript,
-  } = useVoiceInput();
-  const [refineFallbackText, setRefineFallbackText] = useState("");
 
   // Load campaign
   useEffect(() => {
@@ -160,65 +136,6 @@ export default function CampaignEditPage() {
     }, 1500);
   }
 
-  // Voice refinement
-  function handleRefineWithVoice() {
-    setIsRefineMode(true);
-    resetTranscript();
-    setRefineFallbackText("");
-  }
-
-  function handleCancelRefine() {
-    setIsRefineMode(false);
-    if (isListening) stopListening();
-    resetTranscript();
-    setRefineFallbackText("");
-  }
-
-  async function handleSubmitRefinement() {
-    const refineText = voiceSupported ? voiceTranscript : refineFallbackText;
-    if (!refineText.trim()) {
-      toast.error("Please provide a refinement instruction");
-      return;
-    }
-
-    setIsRefining(true);
-    try {
-      const response = await fetch("/api/voice/refine", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          campaignId,
-          transcript: refineText,
-        }),
-      });
-
-      if (!response.ok) {
-        const data = (await response.json()) as { error?: string };
-        throw new Error(data.error ?? "Refinement failed");
-      }
-
-      const data = (await response.json()) as RefineApiResponse;
-      setCampaign((prev) => ({
-        ...prev,
-        name: data.campaign.campaignName,
-        subjectLine: data.campaign.subjectLines[0] ?? prev.subjectLine,
-        htmlBody: data.campaign.htmlBody,
-        textBody: data.campaign.textBody,
-      }));
-
-      setIsRefineMode(false);
-      resetTranscript();
-      setRefineFallbackText("");
-      toast.success("Campaign refined successfully!");
-    } catch (err) {
-      const message =
-        err instanceof Error ? err.message : "Refinement failed";
-      toast.error(message);
-    } finally {
-      setIsRefining(false);
-    }
-  }
-
   // Loading state
   if (pageStatus === "loading") {
     return (
@@ -280,70 +197,19 @@ export default function CampaignEditPage() {
 
       {/* Voice Refinement Panel */}
       {isRefineMode && (
-        <div className="rounded-lg border border-[#FDA085]/30 bg-gradient-to-r from-[#F6D365]/5 to-[#FDA085]/5 p-4">
-          <div className="mb-3 flex items-center justify-between">
-            <h3 className="text-sm font-medium">Refine with Voice</h3>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleCancelRefine}
-              className="h-7 w-7 p-0"
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
-          <p className="mb-3 text-sm text-muted-foreground">
-            Describe how you want to change the campaign (e.g., &ldquo;make it shorter&rdquo;, &ldquo;change the CTA to sign up&rdquo;)
-          </p>
-
-          <div className="flex flex-col items-center gap-3">
-            {voiceSupported ? (
-              <>
-                <MicButton
-                  isListening={isListening}
-                  isSupported={voiceSupported}
-                  onToggle={isListening ? stopListening : startListening}
-                />
-                <TranscriptDisplay
-                  transcript={voiceTranscript}
-                  interimTranscript={interimTranscript}
-                  isListening={isListening}
-                />
-              </>
-            ) : (
-              <textarea
-                value={refineFallbackText}
-                onChange={(e) => setRefineFallbackText(e.target.value)}
-                placeholder="Type your refinement instruction..."
-                rows={3}
-                className="w-full rounded-md border bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-              />
-            )}
-
-            {voiceError && (
-              <p className="text-sm text-destructive">{voiceError}</p>
-            )}
-
-            <Button
-              onClick={handleSubmitRefinement}
-              disabled={
-                isRefining ||
-                isListening ||
-                !(voiceSupported ? voiceTranscript : refineFallbackText).trim()
-              }
-              className="bg-gradient-to-r from-[#F6D365] to-[#FDA085] text-white hover:opacity-90"
-            >
-              {isRefining ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Refining...
-                </>
-              ) : (
-                "Apply Refinement"
-              )}
-            </Button>
-          </div>
-        </div>
+        <VoiceRefinePanel
+          campaignId={campaignId}
+          onRefined={(data) => {
+            setCampaign((prev) => ({
+              ...prev,
+              name: data.name,
+              subjectLine: data.subjectLine,
+              htmlBody: data.htmlBody,
+              textBody: data.textBody,
+            }));
+          }}
+          onClose={() => setIsRefineMode(false)}
+        />
       )}
 
       {/* Editor + Preview Layout */}
@@ -351,8 +217,8 @@ export default function CampaignEditPage() {
         <EditorPanel
           campaign={campaign}
           onChange={handleChange}
-          onRefineWithVoice={handleRefineWithVoice}
-          isRefining={isRefining}
+          onRefineWithVoice={() => setIsRefineMode(true)}
+          isRefining={isRefineMode}
         />
         <EmailPreview
           html={campaign.htmlBody}

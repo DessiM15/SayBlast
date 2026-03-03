@@ -1,7 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { z } from "zod/v4";
 
-const campaignGenerationSchema = z.object({
+export const campaignGenerationSchema = z.object({
   campaignName: z.string(),
   subjectLines: z.array(z.string()).min(1).max(3),
   htmlBody: z.string(),
