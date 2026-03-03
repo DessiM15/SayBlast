@@ -72,6 +72,7 @@ model AudienceList {
   campaigns   Campaign[]
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
+  deletedAt   DateTime?
 }
 
 model Contact {
@@ -84,6 +85,7 @@ model Contact {
   metadata       Json?
   lastEmailedAt  DateTime?
   createdAt      DateTime     @default(now())
+  deletedAt      DateTime?
 
   @@unique([audienceListId, email])
 }

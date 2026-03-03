@@ -18,10 +18,10 @@ export async function GET(
     const skip = (page - 1) * limit;
 
     const audienceList = await db.audienceList.findFirst({
-      where: { id, userId: session.id },
+      where: { id, userId: session.id, deletedAt: null },
       include: {
         _count: {
-          select: { contacts: true },
+          select: { contacts: { where: { deletedAt: null } } },
         },
       },
     });
@@ -34,7 +34,7 @@ export async function GET(
     }
 
     const contacts = await db.contact.findMany({
-      where: { audienceListId: id },
+      where: { audienceListId: id, deletedAt: null },
       orderBy: { createdAt: "desc" },
       take: limit,
       skip,
@@ -80,7 +80,7 @@ export async function PUT(
     const { id } = await params;
 
     const existing = await db.audienceList.findFirst({
-      where: { id, userId: session.id },
+      where: { id, userId: session.id, deletedAt: null },
     });
 
     if (!existing) {
@@ -132,7 +132,7 @@ export async function DELETE(
     const { id } = await params;
 
     const existing = await db.audienceList.findFirst({
-      where: { id, userId: session.id },
+      where: { id, userId: session.id, deletedAt: null },
     });
 
     if (!existing) {
@@ -142,7 +142,15 @@ export async function DELETE(
       );
     }
 
-    await db.audienceList.delete({ where: { id } });
+    const now = new Date();
+    await db.audienceList.update({
+      where: { id },
+      data: { deletedAt: now },
+    });
+    await db.contact.updateMany({
+      where: { audienceListId: id },
+      data: { deletedAt: now },
+    });
 
     return NextResponse.json({ success: true });
   } catch (error) {

@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
 
     // Verify ownership
     const audienceList = await db.audienceList.findFirst({
-      where: { id: audienceListId, userId: session.id },
+      where: { id: audienceListId, userId: session.id, deletedAt: null },
     });
 
     if (!audienceList) {

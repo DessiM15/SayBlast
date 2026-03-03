@@ -37,7 +37,9 @@ export async function sendCampaign(campaignId: string): Promise<SendResult> {
       user: true,
       audienceList: {
         include: {
-          contacts: true,
+          contacts: {
+            where: { deletedAt: null },
+          },
         },
       },
     },

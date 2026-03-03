@@ -10,7 +10,8 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { EMAIL_PROVIDERS } from "@/lib/constants";
-import { Mail, Shield } from "lucide-react";
+import { Lock, Mail, Shield } from "lucide-react";
+import ChangePasswordForm from "@/components/settings/change-password-form";
 
 export default async function SettingsPage() {
   const session = await getSession();
@@ -26,6 +27,7 @@ export default async function SettingsPage() {
       smtpPort: true,
       name: true,
       email: true,
+      passwordHash: true,
     },
   });
 
@@ -114,6 +116,23 @@ export default async function SettingsPage() {
           </CardContent>
         </Card>
       </div>
+
+      {user.passwordHash && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Lock className="h-5 w-5" />
+              Change Password
+            </CardTitle>
+            <CardDescription>
+              Update your account password
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ChangePasswordForm />
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

@@ -8,11 +8,11 @@ export async function GET() {
     const session = await requireSession();
 
     const audienceLists = await db.audienceList.findMany({
-      where: { userId: session.id },
+      where: { userId: session.id, deletedAt: null },
       orderBy: { createdAt: "desc" },
       include: {
         _count: {
-          select: { contacts: true },
+          select: { contacts: { where: { deletedAt: null } } },
         },
       },
     });

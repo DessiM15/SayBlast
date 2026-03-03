@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
 
     // Verify ownership
     const audienceList = await db.audienceList.findFirst({
-      where: { id: audienceListId, userId: session.id },
+      where: { id: audienceListId, userId: session.id, deletedAt: null },
     });
 
     if (!audienceList) {
@@ -102,8 +102,8 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Verify ownership through the audience list relation
-    const contact = await db.contact.findUnique({
-      where: { id: parsed.data.contactId },
+    const contact = await db.contact.findFirst({
+      where: { id: parsed.data.contactId, deletedAt: null },
       include: {
         audienceList: {
           select: { userId: true },
@@ -118,7 +118,10 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    await db.contact.delete({ where: { id: parsed.data.contactId } });
+    await db.contact.update({
+      where: { id: parsed.data.contactId },
+      data: { deletedAt: new Date() },
+    });
 
     return NextResponse.json({ success: true });
   } catch (error) {

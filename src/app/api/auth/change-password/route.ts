@@ -1,0 +1,79 @@
+import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod/v4";
+import { compare, hash } from "bcryptjs";
+import { requireSession } from "@/lib/auth/session";
+import { db } from "@/lib/db";
+import { createClient } from "@supabase/supabase-js";
+
+const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1, "Current password is required"),
+  newPassword: z.string().min(8, "New password must be at least 8 characters"),
+});
+
+export async function POST(request: NextRequest) {
+  try {
+    const session = await requireSession();
+
+    const body: unknown = await request.json();
+    const parsed = changePasswordSchema.safeParse(body);
+
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "Invalid request", details: parsed.error.issues },
+        { status: 400 }
+      );
+    }
+
+    const user = await db.user.findUnique({
+      where: { id: session.id },
+      select: { passwordHash: true, email: true },
+    });
+
+    if (!user || !user.passwordHash) {
+      return NextResponse.json(
+        { error: "Password change is not available for OAuth accounts" },
+        { status: 400 }
+      );
+    }
+
+    const isValid = await compare(parsed.data.currentPassword, user.passwordHash);
+    if (!isValid) {
+      return NextResponse.json(
+        { error: "Current password is incorrect" },
+        { status: 400 }
+      );
+    }
+
+    const newHash = await hash(parsed.data.newPassword, 12);
+
+    await db.user.update({
+      where: { id: session.id },
+      data: { passwordHash: newHash },
+    });
+
+    // Update Supabase Auth to stay in sync
+    const supabaseAdmin = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+    const { data: authUsers } = await supabaseAdmin.auth.admin.listUsers();
+    const authUser = authUsers?.users.find((u) => u.email === user.email);
+    if (authUser) {
+      await supabaseAdmin.auth.admin.updateUserById(authUser.id, {
+        password: parsed.data.newPassword,
+      });
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    if (error instanceof Error && error.message === "Unauthorized") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    console.error("Change password error:", error);
+    return NextResponse.json(
+      { error: "Failed to change password" },
+      { status: 500 }
+    );
+  }
+}
