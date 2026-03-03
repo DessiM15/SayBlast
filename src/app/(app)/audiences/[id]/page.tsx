@@ -200,7 +200,7 @@ export default function AudienceDetailPage() {
   if (pageStatus === "error" || !audienceList) {
     return (
       <div className="flex flex-col items-center gap-4 py-16">
-        <p className="text-sm text-destructive">Audience list not found</p>
+        <p className="text-sm text-destructive" role="alert">Audience list not found</p>
         <Button variant="outline" asChild>
           <Link href="/audiences">Back to Audiences</Link>
         </Button>

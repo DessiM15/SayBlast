@@ -136,7 +136,7 @@ export default function VoiceRefinePanel({
         )}
 
         {voiceError && (
-          <p className="text-sm text-destructive">{voiceError}</p>
+          <p className="text-sm text-destructive" role="alert">{voiceError}</p>
         )}
 
         <Button

@@ -194,11 +194,11 @@ export default function NewCampaignPage() {
           )}
 
           {voiceError && (
-            <p className="text-sm text-destructive">{voiceError}</p>
+            <p className="text-sm text-destructive" role="alert">{voiceError}</p>
           )}
 
           {processingError && (
-            <p className="text-sm text-destructive">{processingError}</p>
+            <p className="text-sm text-destructive" role="alert">{processingError}</p>
           )}
 
           <Button

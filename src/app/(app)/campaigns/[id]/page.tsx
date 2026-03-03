@@ -158,7 +158,7 @@ export default function CampaignDetailPage() {
   if (pageStatus === "error" || !campaign) {
     return (
       <div className="flex flex-col items-center gap-4 py-16">
-        <p className="text-sm text-destructive">
+        <p className="text-sm text-destructive" role="alert">
           {errorMessage ?? "Something went wrong"}
         </p>
         <Button variant="outline" onClick={() => router.push("/campaigns")}>
