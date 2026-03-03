@@ -142,7 +142,7 @@ export default function VoiceRefinePanel({
         <Button
           onClick={handleSubmit}
           disabled={isRefining || isListening || !refineText.trim()}
-          className="bg-gradient-to-r from-[#F6D365] to-[#FDA085] text-white hover:opacity-90"
+          className="bg-gradient-to-r from-[#F6D365] to-[#FDA085] text-foreground hover:opacity-90"
         >
           {isRefining ? (
             <>

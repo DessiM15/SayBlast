@@ -48,8 +48,8 @@ export default function MicButton({
           disabled={disabled}
           className={`relative h-20 w-20 rounded-full transition-all duration-200 ${
             isListening
-              ? "bg-gradient-to-r from-[#F6D365] to-[#FDA085] text-white shadow-lg hover:opacity-90"
-              : "bg-gradient-to-r from-[#F6D365] to-[#FDA085] text-white hover:opacity-80"
+              ? "bg-gradient-to-r from-[#F6D365] to-[#FDA085] text-foreground shadow-lg hover:opacity-90"
+              : "bg-gradient-to-r from-[#F6D365] to-[#FDA085] text-foreground hover:opacity-80"
           }`}
         >
           {isListening ? (

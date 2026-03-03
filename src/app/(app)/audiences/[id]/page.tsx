@@ -294,7 +294,7 @@ export default function AudienceDetailPage() {
             <Button
               onClick={handleAddContact}
               disabled={isAdding || !newEmail.trim()}
-              className="bg-gradient-to-r from-[#F6D365] to-[#FDA085] text-white hover:opacity-90"
+              className="bg-gradient-to-r from-[#F6D365] to-[#FDA085] text-foreground hover:opacity-90"
             >
               {isAdding ? (
                 <Loader2 className="h-4 w-4 animate-spin" />

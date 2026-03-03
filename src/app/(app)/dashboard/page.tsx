@@ -54,7 +54,7 @@ export default async function DashboardPage() {
           <Card className="cursor-pointer transition-all duration-200 hover:shadow-md">
             <CardHeader>
               <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-r from-[#F6D365] to-[#FDA085]">
-                <Megaphone className="h-5 w-5 text-white" />
+                <Megaphone className="h-5 w-5 text-foreground" />
               </div>
               <CardTitle className="text-lg">New Campaign</CardTitle>
               <CardDescription>
@@ -68,7 +68,7 @@ export default async function DashboardPage() {
           <Card className="cursor-pointer transition-all duration-200 hover:shadow-md">
             <CardHeader>
               <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-r from-[#F6D365] to-[#FDA085]">
-                <Users className="h-5 w-5 text-white" />
+                <Users className="h-5 w-5 text-foreground" />
               </div>
               <CardTitle className="text-lg">Audiences</CardTitle>
               <CardDescription>
@@ -82,7 +82,7 @@ export default async function DashboardPage() {
           <Card className="cursor-pointer transition-all duration-200 hover:shadow-md">
             <CardHeader>
               <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-r from-[#F6D365] to-[#FDA085]">
-                <FileText className="h-5 w-5 text-white" />
+                <FileText className="h-5 w-5 text-foreground" />
               </div>
               <CardTitle className="text-lg">Templates</CardTitle>
               <CardDescription>
@@ -131,7 +131,7 @@ export default async function DashboardPage() {
                 href={href}
                 className="flex items-start gap-3 rounded-lg p-3 transition-colors hover:bg-muted/50"
               >
-                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-r from-[#F6D365] to-[#FDA085] text-sm font-bold text-white">
+                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-r from-[#F6D365] to-[#FDA085] text-sm font-bold text-foreground">
                   {step}
                 </div>
                 <div>

@@ -57,7 +57,7 @@ export default function ReviewPanel({ campaign, onSave }: ReviewPanelProps) {
               <div
                 className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border ${
                   selectedSubjectIndex === index
-                    ? "border-[#FDA085] bg-gradient-to-r from-[#F6D365] to-[#FDA085] text-white"
+                    ? "border-[#FDA085] bg-gradient-to-r from-[#F6D365] to-[#FDA085] text-foreground"
                     : "border-muted-foreground/30"
                 }`}
               >
@@ -133,7 +133,7 @@ export default function ReviewPanel({ campaign, onSave }: ReviewPanelProps) {
 
       {/* Save Button */}
       <div className="flex justify-end gap-3">
-        <Button onClick={handleSave} disabled={isSaving} className="bg-gradient-to-r from-[#F6D365] to-[#FDA085] text-white hover:opacity-90">
+        <Button onClick={handleSave} disabled={isSaving} className="bg-gradient-to-r from-[#F6D365] to-[#FDA085] text-foreground hover:opacity-90">
           {isSaving ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />

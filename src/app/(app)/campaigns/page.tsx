@@ -41,7 +41,7 @@ export default async function CampaignsPage() {
         </div>
         <Button
           asChild
-          className="bg-gradient-to-r from-[#F6D365] to-[#FDA085] text-white hover:opacity-90"
+          className="bg-gradient-to-r from-[#F6D365] to-[#FDA085] text-foreground hover:opacity-90"
         >
           <Link href="/campaigns/new">
             <Plus className="mr-2 h-4 w-4" />

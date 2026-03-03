@@ -101,7 +101,7 @@ export default function TemplateList({ builtInTemplates, customTemplates }: Temp
               <div className="px-6 pb-4">
                 <Button
                   size="sm"
-                  className="w-full bg-gradient-to-r from-[#F6D365] to-[#FDA085] text-white hover:opacity-90"
+                  className="w-full bg-gradient-to-r from-[#F6D365] to-[#FDA085] text-foreground hover:opacity-90"
                   onClick={() => handleUseTemplate(template)}
                   disabled={usingTemplateId === template.id}
                 >
@@ -155,7 +155,7 @@ export default function TemplateList({ builtInTemplates, customTemplates }: Temp
                 <div className="px-6 pb-4">
                   <Button
                     size="sm"
-                    className="w-full bg-gradient-to-r from-[#F6D365] to-[#FDA085] text-white hover:opacity-90"
+                    className="w-full bg-gradient-to-r from-[#F6D365] to-[#FDA085] text-foreground hover:opacity-90"
                     onClick={() => handleUseTemplate(template)}
                     disabled={usingTemplateId === template.id}
                   >

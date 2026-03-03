@@ -198,7 +198,7 @@ export default function CampaignDetailPage() {
               size="sm"
               onClick={handleSendNow}
               disabled={isSending}
-              className="bg-gradient-to-r from-[#F6D365] to-[#FDA085] text-white hover:opacity-90"
+              className="bg-gradient-to-r from-[#F6D365] to-[#FDA085] text-foreground hover:opacity-90"
             >
               {isSending ? (
                 <>
@@ -341,7 +341,7 @@ export default function CampaignDetailPage() {
                 <Button
                   onClick={handleSendNow}
                   disabled={isSending}
-                  className="bg-gradient-to-r from-[#F6D365] to-[#FDA085] text-white hover:opacity-90"
+                  className="bg-gradient-to-r from-[#F6D365] to-[#FDA085] text-foreground hover:opacity-90"
                 >
                   <Send className="mr-1 h-4 w-4" />
                   Send Now

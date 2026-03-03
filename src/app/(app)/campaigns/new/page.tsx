@@ -204,7 +204,7 @@ export default function NewCampaignPage() {
           <Button
             onClick={handleProcess}
             disabled={!hasTranscript || isListening}
-            className="bg-gradient-to-r from-[#F6D365] to-[#FDA085] text-white hover:opacity-90"
+            className="bg-gradient-to-r from-[#F6D365] to-[#FDA085] text-foreground hover:opacity-90"
           >
             Process & Generate Campaign
           </Button>

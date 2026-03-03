@@ -47,7 +47,7 @@ export default function Topbar({ user }: TopbarProps) {
           <Button variant="ghost" className="flex items-center gap-2">
             <Avatar className="h-8 w-8">
               <AvatarImage src={user.image ?? undefined} alt={user.name} />
-              <AvatarFallback className="bg-gradient-to-r from-[#F6D365] to-[#FDA085] text-xs text-white">
+              <AvatarFallback className="bg-gradient-to-r from-[#F6D365] to-[#FDA085] text-xs text-foreground">
                 {initials}
               </AvatarFallback>
             </Avatar>
