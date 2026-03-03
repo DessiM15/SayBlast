@@ -1,5 +1,4 @@
 import { mockDb } from "@/test/mocks/db";
-import { mockGetUser } from "@/test/mocks/supabase";
 
 // Mock requireSession via the auth/session module
 vi.mock("@/lib/auth/session", () => ({

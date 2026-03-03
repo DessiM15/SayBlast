@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { updateSession } from "@/lib/supabase/middleware";
+import { rateLimit } from "@/lib/rate-limit";
 
 const PUBLIC_PATHS = ["/login", "/register", "/api/auth"];
 
@@ -11,6 +12,27 @@ function isPublicPath(pathname: string): boolean {
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  // Rate-limit auth endpoints to prevent brute-force attacks
+  if (pathname.startsWith("/api/auth")) {
+    const ip =
+      request.headers.get("x-forwarded-for")?.split(",")[0].trim() ??
+      "unknown";
+    const { success, remaining } = rateLimit(ip, 5, 15_000);
+
+    if (!success) {
+      return NextResponse.json(
+        { error: "Too many requests. Please try again later." },
+        {
+          status: 429,
+          headers: {
+            "Retry-After": "15",
+            "X-RateLimit-Remaining": String(remaining),
+          },
+        },
+      );
+    }
+  }
 
   // Allow public paths
   if (isPublicPath(pathname)) {
