@@ -3,21 +3,43 @@ import { createClient } from "@/lib/supabase/server";
 import { db } from "@/lib/db";
 import { encrypt } from "@/lib/encryption";
 
+function parseReturnTo(stateParam: string | null): string {
+  if (!stateParam) return "/dashboard";
+  try {
+    const parsed = JSON.parse(stateParam) as { returnTo?: string };
+    if (
+      typeof parsed.returnTo === "string" &&
+      parsed.returnTo.startsWith("/") &&
+      !parsed.returnTo.startsWith("//")
+    ) {
+      return parsed.returnTo;
+    }
+  } catch {
+    // Invalid JSON — ignore
+  }
+  return "/dashboard";
+}
+
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
   const error = searchParams.get("error");
+  const stateParam = searchParams.get("state");
+  const returnTo = parseReturnTo(stateParam);
+
+  const errorRedirect =
+    returnTo === "/settings" ? "/settings" : "/register?step=2";
 
   // Handle user denying consent
   if (error) {
     return NextResponse.redirect(
-      `${origin}/register?step=2&error=gmail_denied`
+      `${origin}${errorRedirect}${errorRedirect.includes("?") ? "&" : "?"}error=gmail_denied`
     );
   }
 
   if (!code) {
     return NextResponse.redirect(
-      `${origin}/register?step=2&error=gmail_no_code`
+      `${origin}${errorRedirect}${errorRedirect.includes("?") ? "&" : "?"}error=gmail_no_code`
     );
   }
 
@@ -49,7 +71,7 @@ export async function GET(request: Request) {
       const errorData: unknown = await tokenResponse.json();
       console.error("Google token exchange failed:", errorData);
       return NextResponse.redirect(
-        `${origin}/register?step=2&error=gmail_token_failed`
+        `${origin}${errorRedirect}${errorRedirect.includes("?") ? "&" : "?"}error=gmail_token_failed`
       );
     }
 
@@ -63,7 +85,7 @@ export async function GET(request: Request) {
     if (!tokenData.refresh_token) {
       console.error("Google did not return a refresh token");
       return NextResponse.redirect(
-        `${origin}/register?step=2&error=gmail_no_refresh_token`
+        `${origin}${errorRedirect}${errorRedirect.includes("?") ? "&" : "?"}error=gmail_no_refresh_token`
       );
     }
 
@@ -78,7 +100,7 @@ export async function GET(request: Request) {
     if (!userinfoResponse.ok) {
       console.error("Failed to fetch Google userinfo");
       return NextResponse.redirect(
-        `${origin}/register?step=2&error=gmail_userinfo_failed`
+        `${origin}${errorRedirect}${errorRedirect.includes("?") ? "&" : "?"}error=gmail_userinfo_failed`
       );
     }
 
@@ -97,14 +119,20 @@ export async function GET(request: Request) {
         ),
         emailVerified: true,
         onboardingComplete: true,
+        // Clear any stale SMTP fields from a previous provider
+        smtpHost: null,
+        smtpPort: null,
+        smtpUser: null,
+        smtpPass: null,
+        smtpSecure: true,
       },
     });
 
-    return NextResponse.redirect(`${origin}/dashboard`);
+    return NextResponse.redirect(`${origin}${returnTo}`);
   } catch (err) {
     console.error("Google OAuth callback error:", err);
     return NextResponse.redirect(
-      `${origin}/register?step=2&error=gmail_callback_failed`
+      `${origin}${errorRedirect}${errorRedirect.includes("?") ? "&" : "?"}error=gmail_callback_failed`
     );
   }
 }

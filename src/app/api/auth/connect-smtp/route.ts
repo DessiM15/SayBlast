@@ -42,6 +42,10 @@ export async function POST(req: Request) {
         smtpPass: encryptedPassword,
         smtpSecure: secure,
         emailVerified: true,
+        // Clear any stale OAuth fields from a previous provider
+        emailAccessToken: null,
+        emailRefreshToken: null,
+        emailTokenExpiry: null,
       },
     });
 

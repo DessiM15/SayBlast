@@ -8,10 +8,9 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { EMAIL_PROVIDERS } from "@/lib/constants";
 import { Lock, Mail, Shield } from "lucide-react";
 import ChangePasswordForm from "@/components/settings/change-password-form";
+import EmailProviderSettings from "@/components/settings/email-provider-settings";
 
 export default async function SettingsPage() {
   const session = await getSession();
@@ -32,10 +31,6 @@ export default async function SettingsPage() {
   });
 
   if (!user) redirect("/login");
-
-  const providerInfo = user.emailProvider
-    ? EMAIL_PROVIDERS[user.emailProvider as keyof typeof EMAIL_PROVIDERS]
-    : null;
 
   return (
     <div className="flex flex-col gap-6">
@@ -79,40 +74,16 @@ export default async function SettingsPage() {
               The email account used to send campaigns
             </CardDescription>
           </CardHeader>
-          <CardContent className="flex flex-col gap-4">
-            <div className="flex items-center gap-2">
-              <p className="text-sm text-muted-foreground">Provider</p>
-              {providerInfo && (
-                <Badge variant="secondary">{providerInfo.label}</Badge>
-              )}
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Sender address</p>
-              <p className="font-medium">
-                {user.emailAddress ?? "Not connected"}
-              </p>
-            </div>
-            {user.emailProvider === "smtp" && (
-              <div>
-                <p className="text-sm text-muted-foreground">SMTP Server</p>
-                <p className="font-medium">
-                  {user.smtpHost}:{user.smtpPort}
-                </p>
-              </div>
-            )}
-            <div className="flex items-center gap-2">
-              <p className="text-sm text-muted-foreground">Status</p>
-              <Badge
-                variant={user.emailVerified ? "default" : "destructive"}
-                className={
-                  user.emailVerified
-                    ? "bg-green-100 text-green-800"
-                    : ""
-                }
-              >
-                {user.emailVerified ? "Connected" : "Not verified"}
-              </Badge>
-            </div>
+          <CardContent>
+            <EmailProviderSettings
+              initialSettings={{
+                emailProvider: user.emailProvider,
+                emailAddress: user.emailAddress,
+                emailVerified: user.emailVerified,
+                smtpHost: user.smtpHost,
+                smtpPort: user.smtpPort,
+              }}
+            />
           </CardContent>
         </Card>
       </div>
