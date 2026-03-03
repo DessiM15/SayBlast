@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { CampaignStatus, SendLogStatus } from "@/generated/prisma/client";
 import {
   Card,
+  CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
@@ -92,26 +93,79 @@ export default async function DashboardPage() {
         </Link>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-3">
-        <Card>
+      {totalCampaigns === 0 && emailsSent === 0 && upcoming === 0 ? (
+        <Card className="border-l-4 border-l-[#FDA085]">
           <CardHeader>
-            <CardDescription>Total Campaigns</CardDescription>
-            <CardTitle className="text-3xl">{totalCampaigns}</CardTitle>
+            <CardTitle>Get started with SayBlast</CardTitle>
+            <CardDescription>
+              You&apos;re all set up! Follow these steps to send your first
+              campaign.
+            </CardDescription>
           </CardHeader>
+          <CardContent className="flex flex-col gap-4">
+            {[
+              {
+                step: 1,
+                title: "Create an audience list",
+                description:
+                  "Import or add the contacts you want to email.",
+                href: "/audiences",
+              },
+              {
+                step: 2,
+                title: "Add contacts to your list",
+                description:
+                  "Upload a CSV or add contacts manually.",
+                href: "/audiences",
+              },
+              {
+                step: 3,
+                title: "Create your first campaign",
+                description:
+                  "Describe your email with your voice and send it.",
+                href: "/campaigns/new",
+              },
+            ].map(({ step, title, description, href }) => (
+              <Link
+                key={step}
+                href={href}
+                className="flex items-start gap-3 rounded-lg p-3 transition-colors hover:bg-muted/50"
+              >
+                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-r from-[#F6D365] to-[#FDA085] text-sm font-bold text-white">
+                  {step}
+                </div>
+                <div>
+                  <p className="font-medium">{title}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {description}
+                  </p>
+                </div>
+              </Link>
+            ))}
+          </CardContent>
         </Card>
-        <Card>
-          <CardHeader>
-            <CardDescription>Emails Sent</CardDescription>
-            <CardTitle className="text-3xl">{emailsSent}</CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardDescription>Upcoming</CardDescription>
-            <CardTitle className="text-3xl">{upcoming}</CardTitle>
-          </CardHeader>
-        </Card>
-      </div>
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-3">
+          <Card>
+            <CardHeader>
+              <CardDescription>Total Campaigns</CardDescription>
+              <CardTitle className="text-3xl">{totalCampaigns}</CardTitle>
+            </CardHeader>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardDescription>Emails Sent</CardDescription>
+              <CardTitle className="text-3xl">{emailsSent}</CardTitle>
+            </CardHeader>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardDescription>Upcoming</CardDescription>
+              <CardTitle className="text-3xl">{upcoming}</CardTitle>
+            </CardHeader>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }
