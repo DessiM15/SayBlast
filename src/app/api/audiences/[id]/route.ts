@@ -4,19 +4,22 @@ import { requireSession } from "@/lib/auth/session";
 import { db } from "@/lib/db";
 
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await requireSession();
     const { id } = await params;
 
+    const { searchParams } = new URL(request.url);
+    const page = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10) || 1);
+    const parsedLimit = parseInt(searchParams.get("limit") ?? "50", 10) || 50;
+    const limit = [25, 50, 100, 500].includes(parsedLimit) ? parsedLimit : 50;
+    const skip = (page - 1) * limit;
+
     const audienceList = await db.audienceList.findFirst({
       where: { id, userId: session.id },
       include: {
-        contacts: {
-          orderBy: { createdAt: "desc" },
-        },
         _count: {
           select: { contacts: true },
         },
@@ -30,7 +33,26 @@ export async function GET(
       );
     }
 
-    return NextResponse.json({ audienceList });
+    const contacts = await db.contact.findMany({
+      where: { audienceListId: id },
+      orderBy: { createdAt: "desc" },
+      take: limit,
+      skip,
+    });
+
+    const totalContacts = audienceList._count.contacts;
+    const totalPages = Math.ceil(totalContacts / limit);
+
+    return NextResponse.json({
+      audienceList,
+      contacts,
+      pagination: {
+        page,
+        limit,
+        totalContacts,
+        totalPages,
+      },
+    });
   } catch (error) {
     if (error instanceof Error && error.message === "Unauthorized") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

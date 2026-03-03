@@ -26,7 +26,6 @@ interface AudienceListData {
   id: string;
   name: string;
   description: string | null;
-  contacts: ContactItem[];
   _count: { contacts: number };
 }
 
@@ -39,6 +38,15 @@ export default function AudienceDetailPage() {
 
   const [pageStatus, setPageStatus] = useState<PageStatus>("loading");
   const [audienceList, setAudienceList] = useState<AudienceListData | null>(null);
+  const [contacts, setContacts] = useState<ContactItem[]>([]);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 50,
+    totalContacts: 0,
+    totalPages: 0,
+  });
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(50);
   const [isDeleting, setIsDeleting] = useState(false);
   const [deletingContactId, setDeletingContactId] = useState<string | null>(null);
 
@@ -50,24 +58,39 @@ export default function AudienceDetailPage() {
 
   const loadAudienceList = useCallback(async () => {
     try {
-      const response = await fetch(`/api/audiences/${listId}`);
+      const response = await fetch(
+        `/api/audiences/${listId}?page=${page}&limit=${limit}`
+      );
       if (!response.ok) {
         setPageStatus("error");
         return;
       }
-      const data = (await response.json()) as { audienceList: AudienceListData };
-      setAudienceList({
-        ...data.audienceList,
-        contacts: data.audienceList.contacts.map((c) => ({
+      const data = (await response.json()) as {
+        audienceList: AudienceListData;
+        contacts: ContactItem[];
+        pagination: {
+          page: number;
+          limit: number;
+          totalContacts: number;
+          totalPages: number;
+        };
+      };
+      setAudienceList(data.audienceList);
+      setContacts(
+        data.contacts.map((c) => ({
           ...c,
-          createdAt: typeof c.createdAt === "string" ? c.createdAt : new Date(c.createdAt).toISOString(),
-        })),
-      });
+          createdAt:
+            typeof c.createdAt === "string"
+              ? c.createdAt
+              : new Date(c.createdAt).toISOString(),
+        }))
+      );
+      setPagination(data.pagination);
       setPageStatus("ready");
     } catch {
       setPageStatus("error");
     }
-  }, [listId]);
+  }, [listId, page, limit]);
 
   useEffect(() => {
     loadAudienceList();
@@ -133,6 +156,15 @@ export default function AudienceDetailPage() {
     } finally {
       setDeletingContactId(null);
     }
+  }
+
+  function handlePageChange(newPage: number) {
+    setPage(newPage);
+  }
+
+  function handleLimitChange(newLimit: number) {
+    setLimit(newLimit);
+    setPage(1);
   }
 
   async function handleDeleteList() {
@@ -210,8 +242,8 @@ export default function AudienceDetailPage() {
           <p className="mt-1 text-muted-foreground">{audienceList.description}</p>
         )}
         <p className="mt-1 text-sm text-muted-foreground">
-          {audienceList._count.contacts}{" "}
-          {audienceList._count.contacts === 1 ? "contact" : "contacts"}
+          {pagination.totalContacts}{" "}
+          {pagination.totalContacts === 1 ? "contact" : "contacts"}
         </p>
       </div>
 
@@ -291,14 +323,17 @@ export default function AudienceDetailPage() {
       <Card>
         <CardHeader>
           <CardTitle className="text-base">
-            Contacts ({audienceList._count.contacts})
+            Contacts ({pagination.totalContacts})
           </CardTitle>
         </CardHeader>
         <div className="px-6 pb-6">
           <ContactTable
-            contacts={audienceList.contacts}
+            contacts={contacts}
             onDelete={handleDeleteContact}
             isDeleting={deletingContactId}
+            pagination={pagination}
+            onPageChange={handlePageChange}
+            onLimitChange={handleLimitChange}
           />
         </div>
       </Card>

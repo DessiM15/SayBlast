@@ -1,28 +1,14 @@
 import { NextResponse } from "next/server";
-import { z } from "zod";
+import { requireSession } from "@/lib/auth/session";
 import { db } from "@/lib/db";
 
-const CompleteOnboardingSchema = z.object({
-  userId: z.string().min(1),
-});
-
-export async function POST(req: Request) {
-  const body = await req.json();
-  const parsed = CompleteOnboardingSchema.safeParse(body);
-
-  if (!parsed.success) {
-    return NextResponse.json(
-      { error: "Invalid request" },
-      { status: 400 }
-    );
-  }
-
+export async function POST() {
   try {
-    const { userId } = parsed.data;
+    const session = await requireSession();
 
     // Verify user has connected an email account
     const user = await db.user.findUnique({
-      where: { id: userId },
+      where: { id: session.id },
       select: { emailProvider: true, emailVerified: true },
     });
 
@@ -41,13 +27,17 @@ export async function POST(req: Request) {
     }
 
     await db.user.update({
-      where: { id: userId },
+      where: { id: session.id },
       data: { onboardingComplete: true },
     });
 
     return NextResponse.json({ success: true });
-  } catch (err) {
-    console.error("[POST /api/auth/complete-onboarding]", err);
+  } catch (error) {
+    if (error instanceof Error && error.message === "Unauthorized") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    console.error("[POST /api/auth/complete-onboarding]", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

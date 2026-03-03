@@ -1,5 +1,6 @@
 import type { User } from "@/generated/prisma/client";
 import { db } from "@/lib/db";
+import { encrypt, decrypt } from "@/lib/encryption";
 
 /**
  * Check if the user's OAuth token is expired and refresh it if needed.
@@ -36,7 +37,7 @@ async function refreshGmailToken(user: User): Promise<User> {
     body: new URLSearchParams({
       client_id: process.env.GOOGLE_CLIENT_ID!,
       client_secret: process.env.GOOGLE_CLIENT_SECRET!,
-      refresh_token: user.emailRefreshToken,
+      refresh_token: decrypt(user.emailRefreshToken),
       grant_type: "refresh_token",
     }),
   });
@@ -55,7 +56,7 @@ async function refreshGmailToken(user: User): Promise<User> {
   const updatedUser = await db.user.update({
     where: { id: user.id },
     data: {
-      emailAccessToken: data.access_token,
+      emailAccessToken: encrypt(data.access_token),
       emailTokenExpiry: new Date(Date.now() + data.expires_in * 1000),
     },
   });
@@ -76,7 +77,7 @@ async function refreshOutlookToken(user: User): Promise<User> {
       body: new URLSearchParams({
         client_id: process.env.MICROSOFT_CLIENT_ID!,
         client_secret: process.env.MICROSOFT_CLIENT_SECRET!,
-        refresh_token: user.emailRefreshToken,
+        refresh_token: decrypt(user.emailRefreshToken),
         grant_type: "refresh_token",
         scope: "https://outlook.office365.com/Mail.Send offline_access",
       }),
@@ -98,9 +99,11 @@ async function refreshOutlookToken(user: User): Promise<User> {
   const updatedUser = await db.user.update({
     where: { id: user.id },
     data: {
-      emailAccessToken: data.access_token,
+      emailAccessToken: encrypt(data.access_token),
       // Microsoft may rotate refresh tokens
-      emailRefreshToken: data.refresh_token ?? user.emailRefreshToken,
+      emailRefreshToken: data.refresh_token
+        ? encrypt(data.refresh_token)
+        : user.emailRefreshToken,
       emailTokenExpiry: new Date(Date.now() + data.expires_in * 1000),
     },
   });

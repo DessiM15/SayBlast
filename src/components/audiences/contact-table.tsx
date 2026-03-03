@@ -1,7 +1,14 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Trash2, Users } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { ChevronLeft, ChevronRight, Trash2, Users } from "lucide-react";
 
 export interface ContactItem {
   id: string;
@@ -11,16 +18,29 @@ export interface ContactItem {
   createdAt: string;
 }
 
+interface PaginationData {
+  page: number;
+  limit: number;
+  totalContacts: number;
+  totalPages: number;
+}
+
 interface ContactTableProps {
   contacts: ContactItem[];
   onDelete: (contactId: string) => void;
   isDeleting: string | null;
+  pagination: PaginationData;
+  onPageChange: (page: number) => void;
+  onLimitChange: (limit: number) => void;
 }
 
 export default function ContactTable({
   contacts,
   onDelete,
   isDeleting,
+  pagination,
+  onPageChange,
+  onLimitChange,
 }: ContactTableProps) {
   if (contacts.length === 0) {
     return (
@@ -80,6 +100,54 @@ export default function ContactTable({
           ))}
         </tbody>
       </table>
+      {pagination.totalContacts > 0 && (
+        <div className="flex items-center justify-between border-t pt-4 mt-4">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <span>Showing</span>
+            <Select
+              value={String(pagination.limit)}
+              onValueChange={(val) => onLimitChange(Number(val))}
+            >
+              <SelectTrigger className="h-8 w-[70px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="25">25</SelectItem>
+                <SelectItem value="50">50</SelectItem>
+                <SelectItem value="100">100</SelectItem>
+                <SelectItem value="500">500</SelectItem>
+              </SelectContent>
+            </Select>
+            <span>
+              of {pagination.totalContacts}{" "}
+              {pagination.totalContacts === 1 ? "contact" : "contacts"}
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">
+              Page {pagination.page} of {pagination.totalPages}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 w-8 p-0"
+              onClick={() => onPageChange(pagination.page - 1)}
+              disabled={pagination.page <= 1}
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 w-8 p-0"
+              onClick={() => onPageChange(pagination.page + 1)}
+              disabled={pagination.page >= pagination.totalPages}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

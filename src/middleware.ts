@@ -18,7 +18,7 @@ export async function middleware(request: NextRequest) {
     const ip =
       request.headers.get("x-forwarded-for")?.split(",")[0].trim() ??
       "unknown";
-    const { success, remaining } = rateLimit(ip, 5, 15_000);
+    const { success, remaining } = rateLimit(`auth:${ip}`, 5, 15_000);
 
     if (!success) {
       return NextResponse.json(
@@ -27,6 +27,69 @@ export async function middleware(request: NextRequest) {
           status: 429,
           headers: {
             "Retry-After": "15",
+            "X-RateLimit-Remaining": String(remaining),
+          },
+        },
+      );
+    }
+  }
+
+  // Rate-limit voice processing (Anthropic API costs money)
+  if (pathname.startsWith("/api/voice")) {
+    const ip =
+      request.headers.get("x-forwarded-for")?.split(",")[0].trim() ??
+      "unknown";
+    const { success, remaining } = rateLimit(`voice:${ip}`, 10, 60_000);
+
+    if (!success) {
+      return NextResponse.json(
+        { error: "Too many requests. Please try again later." },
+        {
+          status: 429,
+          headers: {
+            "Retry-After": "60",
+            "X-RateLimit-Remaining": String(remaining),
+          },
+        },
+      );
+    }
+  }
+
+  // Rate-limit campaign sending
+  if (pathname.startsWith("/api/campaigns") && pathname.endsWith("/send")) {
+    const ip =
+      request.headers.get("x-forwarded-for")?.split(",")[0].trim() ??
+      "unknown";
+    const { success, remaining } = rateLimit(`send:${ip}`, 3, 60_000);
+
+    if (!success) {
+      return NextResponse.json(
+        { error: "Too many requests. Please try again later." },
+        {
+          status: 429,
+          headers: {
+            "Retry-After": "60",
+            "X-RateLimit-Remaining": String(remaining),
+          },
+        },
+      );
+    }
+  }
+
+  // Rate-limit CSV uploads
+  if (pathname.startsWith("/api/contacts/upload")) {
+    const ip =
+      request.headers.get("x-forwarded-for")?.split(",")[0].trim() ??
+      "unknown";
+    const { success, remaining } = rateLimit(`upload:${ip}`, 5, 60_000);
+
+    if (!success) {
+      return NextResponse.json(
+        { error: "Too many requests. Please try again later." },
+        {
+          status: 429,
+          headers: {
+            "Retry-After": "60",
             "X-RateLimit-Remaining": String(remaining),
           },
         },

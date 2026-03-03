@@ -47,16 +47,30 @@ export async function POST(req: Request) {
     });
 
     // Auto-confirm the Supabase Auth user's email
-    const supabaseAdmin = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    );
-    const { data: authUsers } = await supabaseAdmin.auth.admin.listUsers();
-    const authUser = authUsers?.users.find((u) => u.email === email);
-    if (authUser) {
-      await supabaseAdmin.auth.admin.updateUserById(authUser.id, {
-        email_confirm: true,
-      });
+    // If this fails, rollback the DB user to prevent ghost accounts
+    try {
+      const supabaseAdmin = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!
+      );
+      const { data: authUsers } = await supabaseAdmin.auth.admin.listUsers();
+      const authUser = authUsers?.users.find((u) => u.email === email);
+      if (authUser) {
+        await supabaseAdmin.auth.admin.updateUserById(authUser.id, {
+          email_confirm: true,
+        });
+      }
+    } catch (confirmError) {
+      console.error("[POST /api/auth/register] Supabase confirm failed, rolling back DB user:", confirmError);
+      try {
+        await db.user.delete({ where: { id: user.id } });
+      } catch (rollbackError) {
+        console.error("[POST /api/auth/register] Rollback failed — orphaned user:", user.id, rollbackError);
+      }
+      return NextResponse.json(
+        { error: "Registration failed. Please try again." },
+        { status: 500 }
+      );
     }
 
     return NextResponse.json({ userId: user.id }, { status: 201 });

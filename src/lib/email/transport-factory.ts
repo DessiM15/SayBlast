@@ -27,8 +27,8 @@ async function createGmailTransport(user: User): Promise<Transporter> {
       user: freshUser.emailAddress!,
       clientId: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      refreshToken: freshUser.emailRefreshToken!,
-      accessToken: freshUser.emailAccessToken!,
+      refreshToken: decrypt(freshUser.emailRefreshToken!),
+      accessToken: decrypt(freshUser.emailAccessToken!),
     },
   });
 }
@@ -46,8 +46,8 @@ async function createOutlookTransport(user: User): Promise<Transporter> {
       user: freshUser.emailAddress!,
       clientId: process.env.MICROSOFT_CLIENT_ID,
       clientSecret: process.env.MICROSOFT_CLIENT_SECRET,
-      refreshToken: freshUser.emailRefreshToken!,
-      accessToken: freshUser.emailAccessToken!,
+      refreshToken: decrypt(freshUser.emailRefreshToken!),
+      accessToken: decrypt(freshUser.emailAccessToken!),
     },
   });
 }

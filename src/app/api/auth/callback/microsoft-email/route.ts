@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { db } from "@/lib/db";
+import { encrypt } from "@/lib/encryption";
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
@@ -91,8 +92,8 @@ export async function GET(request: Request) {
       data: {
         emailProvider: "outlook",
         emailAddress,
-        emailAccessToken: tokenData.access_token,
-        emailRefreshToken: tokenData.refresh_token,
+        emailAccessToken: encrypt(tokenData.access_token),
+        emailRefreshToken: encrypt(tokenData.refresh_token),
         emailTokenExpiry: new Date(
           Date.now() + tokenData.expires_in * 1000
         ),

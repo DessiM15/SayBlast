@@ -72,8 +72,6 @@ export default function RegisterStep2({
     try {
       const response = await fetch("/api/auth/complete-onboarding", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId }),
       });
 
       if (!response.ok) {
@@ -101,7 +99,7 @@ export default function RegisterStep2({
         >
           &larr; Back to options
         </Button>
-        <SmtpForm userId={userId} onComplete={handleSmtpComplete} />
+        <SmtpForm onComplete={handleSmtpComplete} />
         {error && (
           <p className="text-sm text-destructive" role="alert">
             {error}

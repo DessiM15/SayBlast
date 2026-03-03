@@ -6,11 +6,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 interface SmtpFormProps {
-  userId: string;
   onComplete: () => void;
 }
 
-export default function SmtpForm({ userId, onComplete }: SmtpFormProps) {
+export default function SmtpForm({ onComplete }: SmtpFormProps) {
   const [host, setHost] = useState("");
   const [port, setPort] = useState("587");
   const [username, setUsername] = useState("");
@@ -62,7 +61,6 @@ export default function SmtpForm({ userId, onComplete }: SmtpFormProps) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          userId,
           host,
           port: parseInt(port, 10),
           username,
