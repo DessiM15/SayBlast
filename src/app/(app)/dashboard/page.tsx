@@ -2,7 +2,7 @@ import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { db } from "@/lib/db";
-import { CampaignStatus, SendLogStatus } from "@/generated/prisma/client";
+import { CampaignStatus, SendLogStatus } from "@/generated/prisma/enums";
 import {
   Card,
   CardContent,

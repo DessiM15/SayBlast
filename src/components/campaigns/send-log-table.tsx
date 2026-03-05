@@ -7,7 +7,7 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { SendLogStatus } from "@/generated/prisma/client";
+import { SendLogStatus } from "@/generated/prisma/enums";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 export interface SendLogEntry {

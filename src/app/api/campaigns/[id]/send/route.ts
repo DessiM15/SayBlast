@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireSession } from "@/lib/auth/session";
 import { db } from "@/lib/db";
 import { sendCampaign } from "@/lib/email/campaign-sender";
-import { CampaignStatus } from "@/generated/prisma/client";
+import { CampaignStatus } from "@/generated/prisma/enums";
 
 export async function POST(
   _request: NextRequest,

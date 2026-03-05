@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
-import { CampaignStatus } from "@/generated/prisma/client";
+import { CampaignStatus } from "@/generated/prisma/enums";
 import {
   Card,
   CardHeader,

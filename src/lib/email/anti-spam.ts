@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { SendLogStatus } from "@/generated/prisma/client";
+import { SendLogStatus } from "@/generated/prisma/enums";
 
 const COOLDOWN_HOURS = 72;
 const COOLDOWN_MS = COOLDOWN_HOURS * 60 * 60 * 1000;

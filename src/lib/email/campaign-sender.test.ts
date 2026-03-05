@@ -1,7 +1,7 @@
 import { mockDb } from "@/test/mocks/db";
 import { baseUser } from "@/test/fixtures/users";
 import { sendCampaign } from "./campaign-sender";
-import { CampaignStatus } from "@/generated/prisma/client";
+import { CampaignStatus } from "@/generated/prisma/enums";
 
 // Use vi.hoisted to avoid hoisting issues with vi.mock factories
 const { mockSendMail, mockCheckCooldown } = vi.hoisted(() => ({

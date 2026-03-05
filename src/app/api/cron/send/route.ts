@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { sendCampaign } from "@/lib/email/campaign-sender";
 import type { SendResult } from "@/lib/email/campaign-sender";
-import { CampaignStatus } from "@/generated/prisma/client";
+import { CampaignStatus } from "@/generated/prisma/enums";
 
 export async function POST(request: NextRequest) {
   try {

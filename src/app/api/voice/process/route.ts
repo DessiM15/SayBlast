@@ -3,7 +3,7 @@ import { z } from "zod/v4";
 import { requireSession } from "@/lib/auth/session";
 import { db } from "@/lib/db";
 import { processTranscript } from "@/lib/ai/process-transcript";
-import { CampaignStatus, TranscriptType } from "@/generated/prisma/client";
+import { CampaignStatus, TranscriptType } from "@/generated/prisma/enums";
 
 const requestSchema = z.object({
   transcript: z.string().min(1, "Transcript is required"),

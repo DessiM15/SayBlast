@@ -1,7 +1,7 @@
 import { db } from "@/lib/db";
 import { createEmailTransport } from "@/lib/email/transport-factory";
 import { checkCooldown } from "@/lib/email/anti-spam";
-import { CampaignStatus, SendLogStatus } from "@/generated/prisma/client";
+import { CampaignStatus, SendLogStatus } from "@/generated/prisma/enums";
 
 export interface SendResult {
   campaignId: string;

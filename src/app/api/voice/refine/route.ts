@@ -3,7 +3,7 @@ import { z } from "zod/v4";
 import { requireSession } from "@/lib/auth/session";
 import { db } from "@/lib/db";
 import { refineCampaign } from "@/lib/ai/refine-campaign";
-import { TranscriptType } from "@/generated/prisma/client";
+import { TranscriptType } from "@/generated/prisma/enums";
 
 const requestSchema = z.object({
   campaignId: z.string().min(1, "Campaign ID is required"),
