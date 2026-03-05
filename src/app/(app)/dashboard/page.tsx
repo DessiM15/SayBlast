@@ -11,6 +11,9 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Megaphone, Users, FileText } from "lucide-react";
+import ActivityFeed, {
+  type ActivityItem,
+} from "@/components/dashboard/activity-feed";
 
 export default async function DashboardPage() {
   const session = await getSession();
@@ -18,25 +21,102 @@ export default async function DashboardPage() {
 
   const firstName = session.name.split(" ")[0];
 
-  // Fetch real stats from database
-  const [totalCampaigns, emailsSent, upcoming] = await Promise.all([
-    db.campaign.count({
-      where: { userId: session.id },
-    }),
-    db.sendLog.count({
-      where: {
-        status: SendLogStatus.sent,
-        campaign: { userId: session.id },
-      },
-    }),
-    db.campaign.count({
-      where: {
-        userId: session.id,
-        status: CampaignStatus.scheduled,
-        scheduledAt: { gt: new Date() },
-      },
-    }),
-  ]);
+  // Fetch real stats and recent activity from database
+  const [totalCampaigns, emailsSent, upcoming, recentCampaigns, recentAudiences] =
+    await Promise.all([
+      db.campaign.count({
+        where: { userId: session.id },
+      }),
+      db.sendLog.count({
+        where: {
+          status: SendLogStatus.sent,
+          campaign: { userId: session.id },
+        },
+      }),
+      db.campaign.count({
+        where: {
+          userId: session.id,
+          status: CampaignStatus.scheduled,
+          scheduledAt: { gt: new Date() },
+        },
+      }),
+      db.campaign.findMany({
+        where: { userId: session.id },
+        orderBy: { updatedAt: "desc" },
+        take: 7,
+        select: {
+          id: true,
+          name: true,
+          status: true,
+          createdAt: true,
+          updatedAt: true,
+          sentAt: true,
+          scheduledAt: true,
+        },
+      }),
+      db.audienceList.findMany({
+        where: { userId: session.id, deletedAt: null },
+        orderBy: { createdAt: "desc" },
+        take: 5,
+        select: {
+          id: true,
+          name: true,
+          createdAt: true,
+          _count: { select: { contacts: true } },
+        },
+      }),
+    ]);
+
+  // Build activity items from existing data
+  const activityItems: ActivityItem[] = [];
+
+  for (const campaign of recentCampaigns) {
+    if (campaign.status === CampaignStatus.sent && campaign.sentAt) {
+      activityItems.push({
+        id: `sent-${campaign.id}`,
+        type: "campaign_sent",
+        title: `"${campaign.name}" sent`,
+        description: "Campaign delivered to recipients",
+        timestamp: campaign.sentAt,
+        href: `/campaigns/${campaign.id}`,
+      });
+    } else if (
+      campaign.status === CampaignStatus.scheduled &&
+      campaign.scheduledAt
+    ) {
+      activityItems.push({
+        id: `sched-${campaign.id}`,
+        type: "campaign_scheduled",
+        title: `"${campaign.name}" scheduled`,
+        description: `Scheduled for ${campaign.scheduledAt.toLocaleDateString()}`,
+        timestamp: campaign.updatedAt,
+        href: `/campaigns/${campaign.id}`,
+      });
+    } else {
+      activityItems.push({
+        id: `camp-${campaign.id}`,
+        type: "campaign_created",
+        title: `"${campaign.name}" created`,
+        description: `Status: ${campaign.status}`,
+        timestamp: campaign.createdAt,
+        href: `/campaigns/${campaign.id}/edit`,
+      });
+    }
+  }
+
+  for (const audience of recentAudiences) {
+    activityItems.push({
+      id: `aud-${audience.id}`,
+      type: "audience_created",
+      title: `"${audience.name}" created`,
+      description: `${audience._count.contacts} contact${audience._count.contacts === 1 ? "" : "s"}`,
+      timestamp: audience.createdAt,
+      href: `/audiences/${audience.id}`,
+    });
+  }
+
+  activityItems.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+  const topActivity = activityItems.slice(0, 10);
 
   return (
     <div className="flex flex-col gap-6">
@@ -165,6 +245,8 @@ export default async function DashboardPage() {
             </CardHeader>
           </Card>
         </div>
+
+        <ActivityFeed items={topActivity} />
       )}
     </div>
   );
