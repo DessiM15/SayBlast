@@ -1,6 +1,15 @@
 "use client";
 
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
@@ -8,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ChevronLeft, ChevronRight, Trash2, Users } from "lucide-react";
+import { AlertTriangle, ChevronLeft, ChevronRight, Trash2, Users } from "lucide-react";
 
 export interface ContactItem {
   id: string;
@@ -42,6 +51,11 @@ export default function ContactTable({
   onPageChange,
   onLimitChange,
 }: ContactTableProps) {
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  const pendingContact = pendingDeleteId
+    ? contacts.find((c) => c.id === pendingDeleteId)
+    : null;
+
   if (contacts.length === 0) {
     return (
       <div className="flex flex-col items-center gap-3 py-12">
@@ -90,7 +104,7 @@ export default function ContactTable({
                   variant="ghost"
                   size="sm"
                   className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
-                  onClick={() => onDelete(contact.id)}
+                  onClick={() => setPendingDeleteId(contact.id)}
                   disabled={isDeleting === contact.id}
                 >
                   <Trash2 className="h-3.5 w-3.5" />
@@ -148,6 +162,49 @@ export default function ContactTable({
           </div>
         </div>
       )}
+      <Dialog
+        open={pendingDeleteId !== null}
+        onOpenChange={(open) => {
+          if (!open) setPendingDeleteId(null);
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-destructive" />
+              Delete Contact
+            </DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this contact? This action cannot be
+              undone.
+            </DialogDescription>
+          </DialogHeader>
+          {pendingContact && (
+            <div className="rounded-md bg-muted px-3 py-2 text-sm font-medium">
+              {pendingContact.email}
+            </div>
+          )}
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setPendingDeleteId(null)}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                if (pendingDeleteId) {
+                  onDelete(pendingDeleteId);
+                  setPendingDeleteId(null);
+                }
+              }}
+            >
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
