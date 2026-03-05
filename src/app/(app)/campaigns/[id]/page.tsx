@@ -21,9 +21,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   AlertTriangle,
   ArrowLeft,
+  FileText,
   Loader2,
   Pencil,
   Send,
@@ -86,6 +89,9 @@ export default function CampaignDetailPage() {
   const [sendLogPage, setSendLogPage] = useState(1);
   const [sendLogTotal, setSendLogTotal] = useState(0);
   const [showSendConfirm, setShowSendConfirm] = useState(false);
+  const [showSaveTemplate, setShowSaveTemplate] = useState(false);
+  const [templateName, setTemplateName] = useState("");
+  const [isSavingTemplate, setIsSavingTemplate] = useState(false);
 
   const loadCampaign = useCallback(async () => {
     try {
@@ -165,6 +171,37 @@ export default function CampaignDetailPage() {
     }
   }
 
+  async function handleSaveAsTemplate() {
+    if (!campaign?.htmlBody) return;
+
+    setIsSavingTemplate(true);
+    try {
+      const response = await fetch("/api/templates", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: templateName,
+          htmlTemplate: campaign.htmlBody,
+        }),
+      });
+
+      if (!response.ok) {
+        const data = (await response.json()) as { error?: string };
+        throw new Error(data.error ?? "Failed to save template");
+      }
+
+      toast.success("Template saved!");
+      setShowSaveTemplate(false);
+      setTemplateName("");
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Failed to save template";
+      toast.error(message);
+    } finally {
+      setIsSavingTemplate(false);
+    }
+  }
+
   if (pageStatus === "loading") {
     return (
       <div className="flex flex-col items-center gap-4 py-16">
@@ -212,6 +249,19 @@ export default function CampaignDetailPage() {
               Edit
             </Link>
           </Button>
+          {campaign.htmlBody && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setTemplateName(`${campaign.name} Template`);
+                setShowSaveTemplate(true);
+              }}
+            >
+              <FileText className="mr-1 h-4 w-4" />
+              Save as Template
+            </Button>
+          )}
           {canSend && (
             <Button
               size="sm"
@@ -425,6 +475,49 @@ export default function CampaignDetailPage() {
             >
               <Send className="mr-1 h-4 w-4" />
               Send Now
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Save as Template Dialog */}
+      <Dialog open={showSaveTemplate} onOpenChange={setShowSaveTemplate}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Save as Template</DialogTitle>
+            <DialogDescription>
+              Save this campaign&apos;s email content as a reusable template.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="template-name">Template Name</Label>
+            <Input
+              id="template-name"
+              value={templateName}
+              onChange={(e) => setTemplateName(e.target.value)}
+              placeholder="Enter template name"
+            />
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowSaveTemplate(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSaveAsTemplate}
+              disabled={isSavingTemplate || templateName.trim() === ""}
+              className="bg-gradient-to-r from-[#F6D365] to-[#FDA085] text-foreground hover:opacity-90"
+            >
+              {isSavingTemplate ? (
+                <>
+                  <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                "Save Template"
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
