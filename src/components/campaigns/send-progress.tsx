@@ -74,26 +74,26 @@ export default function SendProgress({
 
         {/* Stats row */}
         <div className="grid grid-cols-3 gap-4 text-center">
-          <div className="rounded-lg bg-green-50 p-3">
-            <div className="flex items-center justify-center gap-1 text-green-700">
+          <div className="rounded-lg bg-green-50 dark:bg-green-950 p-3">
+            <div className="flex items-center justify-center gap-1 text-green-700 dark:text-green-300">
               <Mail className="h-4 w-4" />
               <span className="text-xl font-bold">{sentCount}</span>
             </div>
-            <p className="mt-1 text-xs text-green-600">Sent</p>
+            <p className="mt-1 text-xs text-green-600 dark:text-green-400">Sent</p>
           </div>
-          <div className="rounded-lg bg-yellow-50 p-3">
-            <div className="flex items-center justify-center gap-1 text-yellow-700">
+          <div className="rounded-lg bg-yellow-50 dark:bg-yellow-950 p-3">
+            <div className="flex items-center justify-center gap-1 text-yellow-700 dark:text-yellow-300">
               <ShieldOff className="h-4 w-4" />
               <span className="text-xl font-bold">{skippedCount}</span>
             </div>
-            <p className="mt-1 text-xs text-yellow-600">Skipped (Cooldown)</p>
+            <p className="mt-1 text-xs text-yellow-600 dark:text-yellow-400">Skipped (Cooldown)</p>
           </div>
-          <div className="rounded-lg bg-red-50 p-3">
-            <div className="flex items-center justify-center gap-1 text-red-700">
+          <div className="rounded-lg bg-red-50 dark:bg-red-950 p-3">
+            <div className="flex items-center justify-center gap-1 text-red-700 dark:text-red-300">
               <AlertTriangle className="h-4 w-4" />
               <span className="text-xl font-bold">{Math.max(0, failedCount)}</span>
             </div>
-            <p className="mt-1 text-xs text-red-600">Failed</p>
+            <p className="mt-1 text-xs text-red-600 dark:text-red-400">Failed</p>
           </div>
         </div>
       </CardContent>

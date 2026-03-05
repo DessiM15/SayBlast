@@ -249,7 +249,7 @@ export default function EmailProviderSettings({
         <Badge
           variant={settings.emailVerified ? "default" : "destructive"}
           className={
-            settings.emailVerified ? "bg-green-100 text-green-800" : ""
+            settings.emailVerified ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200" : ""
           }
         >
           {settings.emailVerified ? "Connected" : "Not verified"}

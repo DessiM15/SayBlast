@@ -65,11 +65,11 @@ interface CampaignDetail {
 type PageStatus = "loading" | "ready" | "error";
 
 const STATUS_COLORS: Record<string, string> = {
-  [CampaignStatus.draft]: "bg-gray-100 text-gray-800",
-  [CampaignStatus.scheduled]: "bg-blue-100 text-blue-800",
-  [CampaignStatus.sending]: "bg-yellow-100 text-yellow-800",
-  [CampaignStatus.sent]: "bg-green-100 text-green-800",
-  [CampaignStatus.failed]: "bg-red-100 text-red-800",
+  [CampaignStatus.draft]: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200",
+  [CampaignStatus.scheduled]: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
+  [CampaignStatus.sending]: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
+  [CampaignStatus.sent]: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
+  [CampaignStatus.failed]: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
 };
 
 function formatDate(dateStr: string): string {
@@ -289,7 +289,7 @@ export default function CampaignDetailPage() {
       <div>
         <div className="flex items-center gap-3">
           <h1 className="text-2xl font-bold">{campaign.name}</h1>
-          <Badge className={STATUS_COLORS[campaign.status] ?? "bg-gray-100 text-gray-800"}>
+          <Badge className={STATUS_COLORS[campaign.status] ?? "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200"}>
             {campaign.status}
           </Badge>
         </div>
@@ -304,13 +304,13 @@ export default function CampaignDetailPage() {
       {campaign.status === CampaignStatus.sent &&
         campaign.sentCount === 0 &&
         campaign.skippedCount > 0 && (
-          <div className="flex items-start gap-3 rounded-lg border border-yellow-200 bg-yellow-50 p-4">
-            <ShieldOff className="mt-0.5 h-5 w-5 shrink-0 text-yellow-600" />
+          <div className="flex items-start gap-3 rounded-lg border border-yellow-200 bg-yellow-50 dark:border-yellow-800 dark:bg-yellow-950 p-4">
+            <ShieldOff className="mt-0.5 h-5 w-5 shrink-0 text-yellow-600 dark:text-yellow-400" />
             <div>
-              <p className="text-sm font-medium text-yellow-800">
+              <p className="text-sm font-medium text-yellow-800 dark:text-yellow-200">
                 All recipients were skipped
               </p>
-              <p className="mt-1 text-sm text-yellow-700">
+              <p className="mt-1 text-sm text-yellow-700 dark:text-yellow-300">
                 All {campaign.skippedCount} recipient(s) were within the 72-hour
                 anti-spam cooldown. No emails were delivered. Try again after the
                 cooldown period expires.
