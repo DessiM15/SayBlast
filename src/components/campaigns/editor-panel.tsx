@@ -9,7 +9,9 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Mic, Loader2, Pencil } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Clock, Mic, Loader2, Pencil } from "lucide-react";
+import { CampaignStatus } from "@/generated/prisma/enums";
 
 const TiptapEditor = dynamic(
   () => import("@/components/campaigns/tiptap-editor"),
@@ -36,6 +38,20 @@ interface EditorPanelProps {
   onChange: (updates: Partial<CampaignEditorData>) => void;
   onRefineWithVoice: () => void;
   isRefining: boolean;
+}
+
+function toDatetimeLocal(iso: string): string {
+  const date = new Date(iso);
+  const offset = date.getTimezoneOffset();
+  const local = new Date(date.getTime() - offset * 60000);
+  return local.toISOString().slice(0, 16);
+}
+
+function getMinDatetime(): string {
+  const now = new Date();
+  const offset = now.getTimezoneOffset();
+  const local = new Date(now.getTime() - offset * 60000);
+  return local.toISOString().slice(0, 16);
 }
 
 export default function EditorPanel({
@@ -95,6 +111,102 @@ export default function EditorPanel({
           </div>
         </div>
       </Card>
+
+      {/* Scheduling */}
+      {campaign.status === CampaignStatus.sent ||
+      campaign.status === CampaignStatus.sending ? (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Clock className="h-4 w-4" />
+              Schedule
+            </CardTitle>
+          </CardHeader>
+          <div className="px-6 pb-6">
+            <p className="text-sm text-muted-foreground">
+              This campaign has already been sent.
+            </p>
+          </div>
+        </Card>
+      ) : campaign.status === CampaignStatus.scheduled ? (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Clock className="h-4 w-4" />
+              Schedule
+            </CardTitle>
+          </CardHeader>
+          <div className="flex flex-col gap-3 px-6 pb-6">
+            <div className="flex items-center gap-2">
+              <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                Scheduled
+              </Badge>
+              <span className="text-sm font-medium">
+                {campaign.scheduledAt
+                  ? new Date(campaign.scheduledAt).toLocaleString()
+                  : ""}
+              </span>
+            </div>
+            <Button
+              variant="outline"
+              onClick={() =>
+                onChange({
+                  scheduledAt: null,
+                  status: CampaignStatus.draft,
+                })
+              }
+            >
+              Unschedule
+            </Button>
+          </div>
+        </Card>
+      ) : (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Clock className="h-4 w-4" />
+              Schedule
+            </CardTitle>
+          </CardHeader>
+          <div className="flex flex-col gap-3 px-6 pb-6">
+            <div className="space-y-2">
+              <Label htmlFor="scheduled-at">Send Date &amp; Time</Label>
+              <input
+                id="scheduled-at"
+                type="datetime-local"
+                min={getMinDatetime()}
+                value={
+                  campaign.scheduledAt
+                    ? toDatetimeLocal(campaign.scheduledAt)
+                    : ""
+                }
+                onChange={(e) => {
+                  const value = e.target.value;
+                  onChange({
+                    scheduledAt: value ? new Date(value).toISOString() : null,
+                  });
+                }}
+                className="w-full rounded-md border bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              />
+            </div>
+            <Button
+              disabled={
+                !campaign.scheduledAt ||
+                new Date(campaign.scheduledAt) <= new Date()
+              }
+              onClick={() =>
+                onChange({
+                  scheduledAt: campaign.scheduledAt,
+                  status: CampaignStatus.scheduled,
+                })
+              }
+              className="bg-gradient-to-r from-[#F6D365] to-[#FDA085] text-foreground hover:opacity-90"
+            >
+              Schedule Campaign
+            </Button>
+          </div>
+        </Card>
+      )}
 
       <Button
         variant="outline"
