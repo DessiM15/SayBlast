@@ -83,6 +83,90 @@ export async function POST(request: NextRequest) {
   }
 }
 
+const updateContactSchema = z.object({
+  contactId: z.string().min(1, "Contact ID is required"),
+  email: z.email("Invalid email address").optional(),
+  firstName: z.string().optional(),
+  lastName: z.string().optional(),
+});
+
+export async function PATCH(request: NextRequest) {
+  try {
+    const session = await requireSession();
+
+    const body: unknown = await request.json();
+    const parsed = updateContactSchema.safeParse(body);
+
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "Invalid request", details: parsed.error.issues },
+        { status: 400 }
+      );
+    }
+
+    const { contactId, email, firstName, lastName } = parsed.data;
+
+    if (email === undefined && firstName === undefined && lastName === undefined) {
+      return NextResponse.json(
+        { error: "At least one field to update is required" },
+        { status: 400 }
+      );
+    }
+
+    // Verify ownership through the audience list relation
+    const contact = await db.contact.findFirst({
+      where: { id: contactId, deletedAt: null },
+      include: {
+        audienceList: {
+          select: { userId: true },
+        },
+      },
+    });
+
+    if (!contact || contact.audienceList.userId !== session.id) {
+      return NextResponse.json(
+        { error: "Contact not found" },
+        { status: 404 }
+      );
+    }
+
+    const data: { email?: string; firstName?: string; lastName?: string } = {};
+    if (email !== undefined) data.email = email.toLowerCase();
+    if (firstName !== undefined) data.firstName = firstName;
+    if (lastName !== undefined) data.lastName = lastName;
+
+    try {
+      const updated = await db.contact.update({
+        where: { id: contactId },
+        data,
+      });
+
+      return NextResponse.json({ contact: updated });
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        error.message.includes("Unique constraint")
+      ) {
+        return NextResponse.json(
+          { error: "A contact with this email already exists in this list" },
+          { status: 409 }
+        );
+      }
+      throw error;
+    }
+  } catch (error) {
+    if (error instanceof Error && error.message === "Unauthorized") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    console.error("Update contact error:", error);
+    return NextResponse.json(
+      { error: "Failed to update contact" },
+      { status: 500 }
+    );
+  }
+}
+
 const deleteContactSchema = z.object({
   contactId: z.string().min(1, "Contact ID is required"),
 });

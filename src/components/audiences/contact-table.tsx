@@ -17,7 +17,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { AlertTriangle, ChevronLeft, ChevronRight, Trash2, Users } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { AlertTriangle, ChevronLeft, ChevronRight, Loader2, Pencil, Trash2, Users } from "lucide-react";
 
 export interface ContactItem {
   id: string;
@@ -37,6 +39,7 @@ interface PaginationData {
 interface ContactTableProps {
   contacts: ContactItem[];
   onDelete: (contactId: string) => void;
+  onEdit: (contactId: string, data: { email?: string; firstName?: string; lastName?: string }) => Promise<void>;
   isDeleting: string | null;
   pagination: PaginationData;
   onPageChange: (page: number) => void;
@@ -46,6 +49,7 @@ interface ContactTableProps {
 export default function ContactTable({
   contacts,
   onDelete,
+  onEdit,
   isDeleting,
   pagination,
   onPageChange,
@@ -55,6 +59,12 @@ export default function ContactTable({
   const pendingContact = pendingDeleteId
     ? contacts.find((c) => c.id === pendingDeleteId)
     : null;
+
+  const [editingContact, setEditingContact] = useState<ContactItem | null>(null);
+  const [editEmail, setEditEmail] = useState("");
+  const [editFirstName, setEditFirstName] = useState("");
+  const [editLastName, setEditLastName] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
 
   if (contacts.length === 0) {
     return (
@@ -100,15 +110,30 @@ export default function ContactTable({
                 {new Date(contact.createdAt).toLocaleDateString()}
               </td>
               <td className="py-2.5">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
-                  onClick={() => setPendingDeleteId(contact.id)}
-                  disabled={isDeleting === contact.id}
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </Button>
+                <div className="flex items-center gap-1">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+                    onClick={() => {
+                      setEditingContact(contact);
+                      setEditEmail(contact.email);
+                      setEditFirstName(contact.firstName || "");
+                      setEditLastName(contact.lastName || "");
+                    }}
+                  >
+                    <Pencil className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
+                    onClick={() => setPendingDeleteId(contact.id)}
+                    disabled={isDeleting === contact.id}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
               </td>
             </tr>
           ))}
@@ -201,6 +226,85 @@ export default function ContactTable({
               }}
             >
               Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Contact Dialog */}
+      <Dialog
+        open={editingContact !== null}
+        onOpenChange={(open) => {
+          if (!open) setEditingContact(null);
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Contact</DialogTitle>
+            <DialogDescription>
+              Update the contact&apos;s details.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="edit-email">Email</Label>
+              <Input
+                id="edit-email"
+                type="email"
+                value={editEmail}
+                onChange={(e) => setEditEmail(e.target.value)}
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="edit-first-name">First Name</Label>
+              <Input
+                id="edit-first-name"
+                value={editFirstName}
+                onChange={(e) => setEditFirstName(e.target.value)}
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="edit-last-name">Last Name</Label>
+              <Input
+                id="edit-last-name"
+                value={editLastName}
+                onChange={(e) => setEditLastName(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setEditingContact(null)}
+            >
+              Cancel
+            </Button>
+            <Button
+              disabled={isSaving || editEmail.trim() === ""}
+              onClick={async () => {
+                if (!editingContact) return;
+                setIsSaving(true);
+                try {
+                  await onEdit(editingContact.id, {
+                    email: editEmail,
+                    firstName: editFirstName,
+                    lastName: editLastName,
+                  });
+                  setEditingContact(null);
+                } finally {
+                  setIsSaving(false);
+                }
+              }}
+              className="bg-gradient-to-r from-[#F6D365] to-[#FDA085] text-foreground hover:opacity-90"
+            >
+              {isSaving ? (
+                <>
+                  <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                "Save Changes"
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -158,6 +158,25 @@ export default function AudienceDetailPage() {
     }
   }
 
+  async function handleEditContact(
+    contactId: string,
+    data: { email?: string; firstName?: string; lastName?: string },
+  ) {
+    const response = await fetch("/api/contacts", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ contactId, ...data }),
+    });
+
+    if (!response.ok) {
+      const err = (await response.json()) as { error?: string };
+      throw new Error(err.error ?? "Failed to update contact");
+    }
+
+    toast.success("Contact updated");
+    loadAudienceList();
+  }
+
   function handlePageChange(newPage: number) {
     setPage(newPage);
   }
@@ -330,6 +349,7 @@ export default function AudienceDetailPage() {
           <ContactTable
             contacts={contacts}
             onDelete={handleDeleteContact}
+            onEdit={handleEditContact}
             isDeleting={deletingContactId}
             pagination={pagination}
             onPageChange={handlePageChange}
