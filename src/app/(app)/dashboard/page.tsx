@@ -225,28 +225,30 @@ export default async function DashboardPage() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-3">
-          <Card>
-            <CardHeader>
-              <CardDescription>Total Campaigns</CardDescription>
-              <CardTitle className="text-3xl">{totalCampaigns}</CardTitle>
-            </CardHeader>
-          </Card>
-          <Card>
-            <CardHeader>
-              <CardDescription>Emails Sent</CardDescription>
-              <CardTitle className="text-3xl">{emailsSent}</CardTitle>
-            </CardHeader>
-          </Card>
-          <Card>
-            <CardHeader>
-              <CardDescription>Upcoming</CardDescription>
-              <CardTitle className="text-3xl">{upcoming}</CardTitle>
-            </CardHeader>
-          </Card>
-        </div>
+        <>
+          <div className="grid gap-4 sm:grid-cols-3">
+            <Card>
+              <CardHeader>
+                <CardDescription>Total Campaigns</CardDescription>
+                <CardTitle className="text-3xl">{totalCampaigns}</CardTitle>
+              </CardHeader>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardDescription>Emails Sent</CardDescription>
+                <CardTitle className="text-3xl">{emailsSent}</CardTitle>
+              </CardHeader>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardDescription>Upcoming</CardDescription>
+                <CardTitle className="text-3xl">{upcoming}</CardTitle>
+              </CardHeader>
+            </Card>
+          </div>
 
-        <ActivityFeed items={topActivity} />
+          <ActivityFeed items={topActivity} />
+        </>
       )}
     </div>
   );
