@@ -97,6 +97,11 @@ export async function middleware(request: NextRequest) {
     }
   }
 
+  // Allow cron endpoints without any session handling
+  if (pathname.startsWith("/api/cron")) {
+    return NextResponse.next();
+  }
+
   // Allow public paths
   if (isPublicPath(pathname)) {
     const { supabaseResponse } = await updateSession(request);
