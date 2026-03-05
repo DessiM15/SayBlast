@@ -18,7 +18,7 @@ export async function middleware(request: NextRequest) {
     const ip =
       request.headers.get("x-forwarded-for")?.split(",")[0].trim() ??
       "unknown";
-    const { success, remaining } = rateLimit(`auth:${ip}`, 5, 15_000);
+    const { success, remaining } = await rateLimit(`auth:${ip}`, 5, 15_000);
 
     if (!success) {
       return NextResponse.json(
@@ -39,7 +39,7 @@ export async function middleware(request: NextRequest) {
     const ip =
       request.headers.get("x-forwarded-for")?.split(",")[0].trim() ??
       "unknown";
-    const { success, remaining } = rateLimit(`voice:${ip}`, 10, 60_000);
+    const { success, remaining } = await rateLimit(`voice:${ip}`, 10, 60_000);
 
     if (!success) {
       return NextResponse.json(
@@ -60,7 +60,7 @@ export async function middleware(request: NextRequest) {
     const ip =
       request.headers.get("x-forwarded-for")?.split(",")[0].trim() ??
       "unknown";
-    const { success, remaining } = rateLimit(`send:${ip}`, 3, 60_000);
+    const { success, remaining } = await rateLimit(`send:${ip}`, 3, 60_000);
 
     if (!success) {
       return NextResponse.json(
@@ -81,7 +81,7 @@ export async function middleware(request: NextRequest) {
     const ip =
       request.headers.get("x-forwarded-for")?.split(",")[0].trim() ??
       "unknown";
-    const { success, remaining } = rateLimit(`upload:${ip}`, 5, 60_000);
+    const { success, remaining } = await rateLimit(`upload:${ip}`, 5, 60_000);
 
     if (!success) {
       return NextResponse.json(

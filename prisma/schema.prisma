@@ -42,6 +42,9 @@ model User {
   emailRefreshToken String?   @db.Text
   emailTokenExpiry  DateTime?
 
+  // Pending email connection (encrypted JSON, awaiting user confirmation)
+  pendingEmailData String? @db.Text
+
   // SMTP fields
   smtpHost   String?
   smtpPort   Int?

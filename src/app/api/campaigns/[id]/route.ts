@@ -48,6 +48,17 @@ export async function GET(
   }
 }
 
+function isValidStatusTransition(from: CampaignStatus, to: CampaignStatus): boolean {
+  const allowed: Record<CampaignStatus, CampaignStatus[]> = {
+    [CampaignStatus.draft]: [CampaignStatus.scheduled],
+    [CampaignStatus.scheduled]: [CampaignStatus.draft],
+    [CampaignStatus.sending]: [],
+    [CampaignStatus.sent]: [],
+    [CampaignStatus.failed]: [CampaignStatus.draft],
+  };
+  return allowed[from]?.includes(to) ?? false;
+}
+
 const updateCampaignSchema = z.object({
   name: z.string().min(1).optional(),
   subjectLine: z.string().optional(),
@@ -85,6 +96,25 @@ export async function PUT(
         { error: "Invalid request", details: parsed.error.issues },
         { status: 400 }
       );
+    }
+
+    if (parsed.data.status !== undefined && parsed.data.status !== existing.status) {
+      if (!isValidStatusTransition(existing.status, parsed.data.status)) {
+        return NextResponse.json(
+          { error: `Cannot change status from "${existing.status}" to "${parsed.data.status}"` },
+          { status: 400 }
+        );
+      }
+
+      if (parsed.data.status === CampaignStatus.scheduled) {
+        const scheduledAt = parsed.data.scheduledAt ?? (existing.scheduledAt ? existing.scheduledAt.toISOString() : null);
+        if (!scheduledAt) {
+          return NextResponse.json(
+            { error: "Scheduled date is required" },
+            { status: 400 }
+          );
+        }
+      }
     }
 
     const updateData: Record<string, unknown> = {};

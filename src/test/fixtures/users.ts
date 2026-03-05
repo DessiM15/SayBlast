@@ -18,6 +18,7 @@ export const baseUser: User = {
   smtpSecure: true,
   emailVerified: true,
   onboardingComplete: true,
+  pendingEmailData: null,
   createdAt: new Date("2025-01-01"),
   updatedAt: new Date("2025-01-01"),
 };

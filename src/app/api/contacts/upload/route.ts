@@ -6,7 +6,7 @@ import { db } from "@/lib/db";
 
 const uploadSchema = z.object({
   audienceListId: z.string().min(1, "Audience list ID is required"),
-  csvText: z.string().min(1, "CSV content is required"),
+  csvText: z.string().min(1, "CSV content is required").max(5_242_880, "CSV file too large. Maximum size is 5MB."),
 });
 
 interface CsvRow {

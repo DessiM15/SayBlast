@@ -8,6 +8,7 @@ const RegisterSchema = z.object({
   name: z.string().min(1, "Name is required").max(100),
   email: z.string().email("Invalid email address"),
   password: z.string().min(8, "Password must be at least 8 characters"),
+  supabaseUserId: z.string().uuid("Invalid user ID").optional(),
 });
 
 export async function POST(req: Request) {
@@ -53,10 +54,8 @@ export async function POST(req: Request) {
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.SUPABASE_SERVICE_ROLE_KEY!
       );
-      const { data: authUsers } = await supabaseAdmin.auth.admin.listUsers();
-      const authUser = authUsers?.users.find((u) => u.email === email);
-      if (authUser) {
-        await supabaseAdmin.auth.admin.updateUserById(authUser.id, {
+      if (parsed.data.supabaseUserId) {
+        await supabaseAdmin.auth.admin.updateUserById(parsed.data.supabaseUserId, {
           email_confirm: true,
         });
       }

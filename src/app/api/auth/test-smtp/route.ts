@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createTransport } from "nodemailer";
+import { requireSession } from "@/lib/auth/session";
 
 const TestSmtpSchema = z.object({
   host: z.string().min(1),
@@ -11,6 +12,12 @@ const TestSmtpSchema = z.object({
 });
 
 export async function POST(req: Request) {
+  try {
+    await requireSession();
+  } catch {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const body = await req.json();
   const parsed = TestSmtpSchema.safeParse(body);
 

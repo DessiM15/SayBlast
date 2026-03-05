@@ -43,8 +43,7 @@ async function refreshGmailToken(user: User): Promise<User> {
   });
 
   if (!response.ok) {
-    const errorData: unknown = await response.json();
-    console.error("Gmail token refresh failed:", errorData);
+    console.error("Gmail token refresh failed: status", response.status);
     throw new Error("Failed to refresh Gmail token");
   }
 
@@ -85,8 +84,7 @@ async function refreshOutlookToken(user: User): Promise<User> {
   );
 
   if (!response.ok) {
-    const errorData: unknown = await response.json();
-    console.error("Outlook token refresh failed:", errorData);
+    console.error("Outlook token refresh failed: status", response.status);
     throw new Error("Failed to refresh Outlook token");
   }
 

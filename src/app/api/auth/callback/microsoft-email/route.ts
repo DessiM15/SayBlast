@@ -72,8 +72,7 @@ export async function GET(request: Request) {
     );
 
     if (!tokenResponse.ok) {
-      const errorData: unknown = await tokenResponse.json();
-      console.error("Microsoft token exchange failed:", errorData);
+      console.error("Microsoft token exchange failed: status", tokenResponse.status);
       return NextResponse.redirect(
         `${origin}${errorRedirect}${errorRedirect.includes("?") ? "&" : "?"}error=outlook_token_failed`
       );
@@ -108,29 +107,25 @@ export async function GET(request: Request) {
         profile.mail ?? profile.userPrincipalName ?? supabaseUser.email;
     }
 
-    // Store tokens on the user record and complete onboarding
-    await db.user.update({
-      where: { email: supabaseUser.email },
-      data: {
-        emailProvider: "outlook",
-        emailAddress,
-        emailAccessToken: encrypt(tokenData.access_token),
-        emailRefreshToken: encrypt(tokenData.refresh_token),
-        emailTokenExpiry: new Date(
-          Date.now() + tokenData.expires_in * 1000
-        ),
-        emailVerified: true,
-        onboardingComplete: true,
-        // Clear any stale SMTP fields from a previous provider
-        smtpHost: null,
-        smtpPort: null,
-        smtpUser: null,
-        smtpPass: null,
-        smtpSecure: true,
-      },
+    // Store pending connection data — user must confirm before it's saved
+    const pendingData = JSON.stringify({
+      provider: "outlook",
+      emailAddress,
+      accessToken: tokenData.access_token,
+      refreshToken: tokenData.refresh_token,
+      expiresIn: tokenData.expires_in,
+      returnTo,
+      createdAt: Date.now(),
     });
 
-    return NextResponse.redirect(`${origin}${returnTo}`);
+    await db.user.update({
+      where: { email: supabaseUser.email },
+      data: { pendingEmailData: encrypt(pendingData) },
+    });
+
+    return NextResponse.redirect(
+      `${origin}/confirm-email-connection`
+    );
   } catch (err) {
     console.error("Microsoft OAuth callback error:", err);
     return NextResponse.redirect(

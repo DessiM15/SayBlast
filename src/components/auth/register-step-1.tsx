@@ -42,7 +42,7 @@ export default function RegisterStep1({ onComplete }: RegisterStep1Props) {
 
     try {
       // Sign up with Supabase Auth
-      const { error: signUpError } = await supabase.auth.signUp({
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -59,7 +59,7 @@ export default function RegisterStep1({ onComplete }: RegisterStep1Props) {
       const response = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, password }),
+        body: JSON.stringify({ name, email, password, supabaseUserId: signUpData?.user?.id }),
       });
 
       const data = await response.json();

@@ -4,6 +4,7 @@ import { compare, hash } from "bcryptjs";
 import { requireSession } from "@/lib/auth/session";
 import { db } from "@/lib/db";
 import { createClient } from "@supabase/supabase-js";
+import { createClient as createServerClient } from "@/lib/supabase/server";
 
 const changePasswordSchema = z.object({
   currentPassword: z.string().min(1, "Current password is required"),
@@ -52,14 +53,14 @@ export async function POST(request: NextRequest) {
     });
 
     // Update Supabase Auth to stay in sync
-    const supabaseAdmin = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    );
-    const { data: authUsers } = await supabaseAdmin.auth.admin.listUsers();
-    const authUser = authUsers?.users.find((u) => u.email === user.email);
-    if (authUser) {
-      await supabaseAdmin.auth.admin.updateUserById(authUser.id, {
+    const supabase = await createServerClient();
+    const { data: { user: supabaseUser } } = await supabase.auth.getUser();
+    if (supabaseUser) {
+      const supabaseAdmin = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!
+      );
+      await supabaseAdmin.auth.admin.updateUserById(supabaseUser.id, {
         password: parsed.data.newPassword,
       });
     }

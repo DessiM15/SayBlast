@@ -1,47 +1,42 @@
-interface RateLimitEntry {
-  count: number;
-  resetTime: number;
-}
+import { Ratelimit } from "@upstash/ratelimit";
+import { Redis } from "@upstash/redis";
 
-const store = new Map<string, RateLimitEntry>();
+const redis = new Redis({
+  url: process.env.UPSTASH_REDIS_REST_URL!,
+  token: process.env.UPSTASH_REDIS_REST_TOKEN!,
+});
 
-/** Remove all expired entries from the store. */
-function cleanup(now: number): void {
-  for (const [key, entry] of store) {
-    if (now >= entry.resetTime) {
-      store.delete(key);
-    }
-  }
-}
+const limiters = {
+  auth: new Ratelimit({
+    redis,
+    limiter: Ratelimit.slidingWindow(5, "15 s"),
+    prefix: "rl:auth",
+  }),
+  voice: new Ratelimit({
+    redis,
+    limiter: Ratelimit.slidingWindow(10, "60 s"),
+    prefix: "rl:voice",
+  }),
+  send: new Ratelimit({
+    redis,
+    limiter: Ratelimit.slidingWindow(3, "60 s"),
+    prefix: "rl:send",
+  }),
+  upload: new Ratelimit({
+    redis,
+    limiter: Ratelimit.slidingWindow(5, "60 s"),
+    prefix: "rl:upload",
+  }),
+};
 
-/**
- * In-memory rate limiter. Returns whether the request is allowed and how many
- * requests remain in the current window.
- *
- * @param ip      - Client identifier (IP address)
- * @param limit   - Max requests allowed per window (default 5)
- * @param windowMs - Window duration in milliseconds (default 15 000)
- */
-export function rateLimit(
-  ip: string,
-  limit = 5,
-  windowMs = 15_000,
-): { success: boolean; remaining: number } {
-  const now = Date.now();
-  cleanup(now);
+export async function rateLimit(
+  key: string,
+  _limit?: number,
+  _windowMs?: number,
+): Promise<{ success: boolean; remaining: number }> {
+  const prefix = key.split(":")[0] as keyof typeof limiters;
+  const limiter = limiters[prefix] ?? limiters.auth;
 
-  const entry = store.get(ip);
-
-  if (!entry || now >= entry.resetTime) {
-    store.set(ip, { count: 1, resetTime: now + windowMs });
-    return { success: true, remaining: limit - 1 };
-  }
-
-  entry.count += 1;
-
-  if (entry.count > limit) {
-    return { success: false, remaining: 0 };
-  }
-
-  return { success: true, remaining: limit - entry.count };
+  const result = await limiter.limit(key);
+  return { success: result.success, remaining: result.remaining };
 }
