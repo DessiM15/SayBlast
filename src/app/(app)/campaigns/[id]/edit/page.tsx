@@ -115,6 +115,32 @@ export default function CampaignEditPage() {
     [campaignId]
   );
 
+  // Flush pending changes on unmount (prevents data loss on navigation)
+  useEffect(() => {
+    return () => {
+      if (saveTimerRef.current) {
+        clearTimeout(saveTimerRef.current);
+      }
+      if (pendingChangesRef.current) {
+        saveCampaign(pendingChangesRef.current);
+        pendingChangesRef.current = null;
+      }
+    };
+  }, [saveCampaign]);
+
+  // Warn on tab close/refresh when there are pending changes
+  useEffect(() => {
+    function handleBeforeUnload(e: BeforeUnloadEvent) {
+      if (pendingChangesRef.current) {
+        e.preventDefault();
+      }
+    }
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, []);
+
   function handleChange(updates: Partial<CampaignEditorData>) {
     setCampaign((prev) => ({ ...prev, ...updates }));
 

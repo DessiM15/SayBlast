@@ -22,6 +22,7 @@ vi.mock("@/lib/email/anti-spam", () => ({
 function makeCampaign(overrides: Record<string, unknown> = {}) {
   return {
     id: "campaign-1",
+    userId: baseUser.id,
     status: CampaignStatus.sending,
     htmlBody: "<p>Hello</p>",
     textBody: "Hello",

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { z } from "zod";
+import { z } from "zod/v4";
 import { createTransport } from "nodemailer";
 import { requireSession } from "@/lib/auth/session";
 

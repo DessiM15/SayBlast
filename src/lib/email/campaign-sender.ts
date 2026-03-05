@@ -99,7 +99,7 @@ export async function sendCampaign(campaignId: string): Promise<SendResult> {
     const contact = contacts[i];
 
     // Check anti-spam cooldown
-    const cooldown = await checkCooldown(contact.email);
+    const cooldown = await checkCooldown(contact.email, campaign.userId);
 
     if (!cooldown.allowed) {
       sendLogEntries.push({

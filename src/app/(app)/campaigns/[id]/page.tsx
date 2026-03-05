@@ -14,6 +14,15 @@ import {
   CardHeader,
 } from "@/components/ui/card";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  AlertTriangle,
   ArrowLeft,
   Loader2,
   Pencil,
@@ -69,14 +78,20 @@ export default function CampaignDetailPage() {
   const router = useRouter();
   const campaignId = params.id;
 
+  const SEND_LOG_PAGE_SIZE = 50;
   const [pageStatus, setPageStatus] = useState<PageStatus>("loading");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [campaign, setCampaign] = useState<CampaignDetail | null>(null);
   const [isSending, setIsSending] = useState(false);
+  const [sendLogPage, setSendLogPage] = useState(1);
+  const [sendLogTotal, setSendLogTotal] = useState(0);
+  const [showSendConfirm, setShowSendConfirm] = useState(false);
 
   const loadCampaign = useCallback(async () => {
     try {
-      const response = await fetch(`/api/campaigns/${campaignId}`);
+      const response = await fetch(
+        `/api/campaigns/${campaignId}?page=${sendLogPage}&pageSize=${SEND_LOG_PAGE_SIZE}`
+      );
       if (!response.ok) {
         setErrorMessage(
           response.status === 404
@@ -86,14 +101,18 @@ export default function CampaignDetailPage() {
         setPageStatus("error");
         return;
       }
-      const data = (await response.json()) as { campaign: CampaignDetail };
+      const data = (await response.json()) as {
+        campaign: CampaignDetail;
+        sendLogTotal: number;
+      };
       setCampaign(data.campaign);
+      setSendLogTotal(data.sendLogTotal);
       setPageStatus("ready");
     } catch {
       setErrorMessage("Failed to load campaign");
       setPageStatus("error");
     }
-  }, [campaignId]);
+  }, [campaignId, sendLogPage]);
 
   useEffect(() => {
     loadCampaign();
@@ -196,7 +215,7 @@ export default function CampaignDetailPage() {
           {canSend && (
             <Button
               size="sm"
-              onClick={handleSendNow}
+              onClick={() => setShowSendConfirm(true)}
               disabled={isSending}
               className="bg-gradient-to-r from-[#F6D365] to-[#FDA085] text-foreground hover:opacity-90"
             >
@@ -324,7 +343,13 @@ export default function CampaignDetailPage() {
 
       {/* Send Log */}
       {campaign.sendLog.length > 0 && (
-        <SendLogTable entries={campaign.sendLog} />
+        <SendLogTable
+          entries={campaign.sendLog}
+          page={sendLogPage}
+          pageSize={SEND_LOG_PAGE_SIZE}
+          total={sendLogTotal}
+          onPageChange={setSendLogPage}
+        />
       )}
 
       {/* Empty state for unsent campaigns */}
@@ -339,7 +364,7 @@ export default function CampaignDetailPage() {
               </p>
               {canSend && (
                 <Button
-                  onClick={handleSendNow}
+                  onClick={() => setShowSendConfirm(true)}
                   disabled={isSending}
                   className="bg-gradient-to-r from-[#F6D365] to-[#FDA085] text-foreground hover:opacity-90"
                 >
@@ -350,6 +375,60 @@ export default function CampaignDetailPage() {
             </CardContent>
           </Card>
         )}
+
+      {/* Send Confirmation Dialog */}
+      <Dialog open={showSendConfirm} onOpenChange={setShowSendConfirm}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-yellow-500" />
+              Confirm Send
+            </DialogTitle>
+            <DialogDescription>
+              This action cannot be undone. Emails will be sent immediately.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-2 text-sm">
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Campaign</span>
+              <span className="font-medium">{campaign.name}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Subject</span>
+              <span className="font-medium">{campaign.subjectLine}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Audience</span>
+              <span className="font-medium">
+                {campaign.audienceList?.name ?? "Unknown"}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Recipients</span>
+              <span className="font-medium">{campaign.totalRecipients}</span>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowSendConfirm(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                setShowSendConfirm(false);
+                handleSendNow();
+              }}
+              disabled={isSending}
+              className="bg-gradient-to-r from-[#F6D365] to-[#FDA085] text-foreground hover:opacity-90"
+            >
+              <Send className="mr-1 h-4 w-4" />
+              Send Now
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

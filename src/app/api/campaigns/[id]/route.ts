@@ -4,28 +4,44 @@ import { requireSession } from "@/lib/auth/session";
 import { db } from "@/lib/db";
 import { CampaignStatus } from "@/generated/prisma/client";
 
+const ALLOWED_PAGE_SIZES = [25, 50, 100] as const;
+
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await requireSession();
     const { id } = await params;
 
-    const campaign = await db.campaign.findFirst({
-      where: { id, userId: session.id },
-      include: {
-        transcripts: {
-          orderBy: { createdAt: "desc" },
+    const searchParams = request.nextUrl.searchParams;
+    const page = Math.max(1, Number(searchParams.get("page")) || 1);
+    const rawPageSize = Number(searchParams.get("pageSize")) || 50;
+    const pageSize = ALLOWED_PAGE_SIZES.includes(rawPageSize as typeof ALLOWED_PAGE_SIZES[number])
+      ? rawPageSize
+      : 50;
+
+    const [campaign, sendLogTotal] = await Promise.all([
+      db.campaign.findFirst({
+        where: { id, userId: session.id },
+        include: {
+          transcripts: {
+            orderBy: { createdAt: "desc" },
+          },
+          audienceList: {
+            select: { id: true, name: true },
+          },
+          sendLog: {
+            orderBy: { sentAt: "desc" },
+            take: pageSize,
+            skip: (page - 1) * pageSize,
+          },
         },
-        audienceList: {
-          select: { id: true, name: true },
-        },
-        sendLog: {
-          orderBy: { sentAt: "desc" },
-        },
-      },
-    });
+      }),
+      db.sendLog.count({
+        where: { campaignId: id },
+      }),
+    ]);
 
     if (!campaign) {
       return NextResponse.json(
@@ -34,7 +50,7 @@ export async function GET(
       );
     }
 
-    return NextResponse.json({ campaign });
+    return NextResponse.json({ campaign, sendLogTotal });
   } catch (error) {
     if (error instanceof Error && error.message === "Unauthorized") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

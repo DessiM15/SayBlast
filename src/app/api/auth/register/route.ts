@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { z } from "zod";
+import { z } from "zod/v4";
 import { hash } from "bcryptjs";
 import { db } from "@/lib/db";
 import { createClient } from "@supabase/supabase-js";

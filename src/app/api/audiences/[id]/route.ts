@@ -151,6 +151,10 @@ export async function DELETE(
       where: { audienceListId: id },
       data: { deletedAt: now },
     });
+    await db.campaign.updateMany({
+      where: { audienceListId: id },
+      data: { audienceListId: null },
+    });
 
     return NextResponse.json({ success: true });
   } catch (error) {

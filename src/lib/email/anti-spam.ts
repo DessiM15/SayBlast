@@ -10,20 +10,22 @@ interface CooldownResult {
 }
 
 /**
- * Check whether a contact email is within the 72-hour anti-spam cooldown.
- * Looks at SendLog entries with status "sent" across ALL campaigns.
+ * Check whether a contact email is within the 72-hour anti-spam cooldown
+ * for a specific user. Only the given user's own send history is checked.
  */
 export async function checkCooldown(
-  contactEmail: string
+  contactEmail: string,
+  userId: string
 ): Promise<CooldownResult> {
   const cutoff = new Date(Date.now() - COOLDOWN_MS);
 
-  // Check SendLog for any successful send to this email within 72 hours
+  // Check SendLog for any successful send to this email by this user within 72 hours
   const recentSend = await db.sendLog.findFirst({
     where: {
       contactEmail,
       status: SendLogStatus.sent,
       sentAt: { gte: cutoff },
+      campaign: { userId },
     },
     select: { sentAt: true },
   });

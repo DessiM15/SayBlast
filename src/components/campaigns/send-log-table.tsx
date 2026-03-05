@@ -6,7 +6,9 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { SendLogStatus } from "@/generated/prisma/client";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 export interface SendLogEntry {
   id: string;
@@ -18,18 +20,34 @@ export interface SendLogEntry {
 
 interface SendLogTableProps {
   entries: SendLogEntry[];
+  page: number;
+  pageSize: number;
+  total: number;
+  onPageChange: (page: number) => void;
 }
 
 function formatDate(dateStr: string): string {
   return new Date(dateStr).toLocaleString();
 }
 
-export default function SendLogTable({ entries }: SendLogTableProps) {
+export default function SendLogTable({
+  entries,
+  page,
+  pageSize,
+  total,
+  onPageChange,
+}: SendLogTableProps) {
+  const start = (page - 1) * pageSize + 1;
+  const end = Math.min(page * pageSize, total);
+  const totalPages = Math.ceil(total / pageSize);
+
   return (
     <Card>
       <CardHeader>
         <CardTitle className="text-base">Send Log</CardTitle>
-        <CardDescription>{entries.length} entries</CardDescription>
+        <CardDescription>
+          Showing {start}–{end} of {total} entries
+        </CardDescription>
       </CardHeader>
       <CardContent>
         <div className="overflow-x-auto">
@@ -75,6 +93,34 @@ export default function SendLogTable({ entries }: SendLogTableProps) {
             </tbody>
           </table>
         </div>
+
+        {totalPages > 1 && (
+          <div className="mt-4 flex items-center justify-between">
+            <p className="text-xs text-muted-foreground">
+              Page {page} of {totalPages}
+            </p>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onPageChange(page - 1)}
+                disabled={page <= 1}
+              >
+                <ChevronLeft className="mr-1 h-4 w-4" />
+                Previous
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onPageChange(page + 1)}
+                disabled={page >= totalPages}
+              >
+                Next
+                <ChevronRight className="ml-1 h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
