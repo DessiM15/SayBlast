@@ -1,4 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
+import DOMPurify from "isomorphic-dompurify";
 import {
   campaignGenerationSchema,
   type CampaignGeneration,
@@ -97,5 +98,13 @@ export async function refineCampaign(
   }
 
   const result = campaignGenerationSchema.parse(parsed);
+  result.htmlBody = DOMPurify.sanitize(result.htmlBody, {
+    ALLOWED_TAGS: ['html','head','body','p','br','strong','em','b','i','u','a',
+      'h1','h2','h3','h4','ul','ol','li','table','tr','td','th','thead','tbody',
+      'img','span','div','blockquote','hr','center','style'],
+    ALLOWED_ATTR: ['href','src','alt','style','class','target','width','height',
+      'cellpadding','cellspacing','border','align','valign','bgcolor','color',
+      'rel','title'],
+  });
   return result;
 }
