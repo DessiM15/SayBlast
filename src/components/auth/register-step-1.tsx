@@ -17,7 +17,8 @@ export default function RegisterStep1({ onComplete }: RegisterStep1Props) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [error, setError] = useState("");
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [serverError, setServerError] = useState("");
   const [isPending, setIsPending] = useState(false);
 
   const supabase = createClient();
@@ -26,15 +27,16 @@ export default function RegisterStep1({ onComplete }: RegisterStep1Props) {
     e.preventDefault();
     if (isPending) return;
 
-    setError("");
+    setErrors({});
+    setServerError("");
 
-    if (password !== confirmPassword) {
-      setError("Passwords do not match");
-      return;
-    }
-
-    if (password.length < 8) {
-      setError("Password must be at least 8 characters");
+    const newErrors: Record<string, string> = {};
+    if (!name.trim()) newErrors.name = "Name is required";
+    if (!email) newErrors.email = "Email is required";
+    if (password.length < 8) newErrors.password = "Password must be at least 8 characters";
+    if (password !== confirmPassword) newErrors.confirmPassword = "Passwords do not match";
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
       return;
     }
 
@@ -51,7 +53,7 @@ export default function RegisterStep1({ onComplete }: RegisterStep1Props) {
       });
 
       if (signUpError) {
-        setError(signUpError.message);
+        setServerError(signUpError.message);
         return;
       }
 
@@ -65,13 +67,13 @@ export default function RegisterStep1({ onComplete }: RegisterStep1Props) {
       const data = await response.json();
 
       if (!response.ok) {
-        setError(data.error || "Registration failed");
+        setServerError(data.error || "Registration failed");
         return;
       }
 
       onComplete(data.userId);
     } catch {
-      setError("An unexpected error occurred. Please try again.");
+      setServerError("An unexpected error occurred. Please try again.");
     } finally {
       setIsPending(false);
     }
@@ -86,7 +88,7 @@ export default function RegisterStep1({ onComplete }: RegisterStep1Props) {
     });
 
     if (authError) {
-      setError(authError.message);
+      setServerError(authError.message);
     }
   }
 
@@ -105,6 +107,9 @@ export default function RegisterStep1({ onComplete }: RegisterStep1Props) {
             autoComplete="name"
             disabled={isPending}
           />
+          {errors.name && (
+            <p className="text-sm text-destructive" role="alert">{errors.name}</p>
+          )}
         </div>
         <div className="flex flex-col gap-2">
           <Label htmlFor="email">Email</Label>
@@ -118,6 +123,9 @@ export default function RegisterStep1({ onComplete }: RegisterStep1Props) {
             autoComplete="email"
             disabled={isPending}
           />
+          {errors.email && (
+            <p className="text-sm text-destructive" role="alert">{errors.email}</p>
+          )}
         </div>
         <div className="flex flex-col gap-2">
           <Label htmlFor="password">Password</Label>
@@ -132,6 +140,9 @@ export default function RegisterStep1({ onComplete }: RegisterStep1Props) {
             autoComplete="new-password"
             disabled={isPending}
           />
+          {errors.password && (
+            <p className="text-sm text-destructive" role="alert">{errors.password}</p>
+          )}
         </div>
         <div className="flex flex-col gap-2">
           <Label htmlFor="confirmPassword">Confirm password</Label>
@@ -145,11 +156,14 @@ export default function RegisterStep1({ onComplete }: RegisterStep1Props) {
             autoComplete="new-password"
             disabled={isPending}
           />
+          {errors.confirmPassword && (
+            <p className="text-sm text-destructive" role="alert">{errors.confirmPassword}</p>
+          )}
         </div>
 
-        {error && (
+        {serverError && (
           <p className="text-sm text-destructive" role="alert">
-            {error}
+            {serverError}
           </p>
         )}
 

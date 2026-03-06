@@ -21,7 +21,8 @@ export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [serverError, setServerError] = useState("");
   const [isPending, setIsPending] = useState(false);
 
   const supabase = createClient();
@@ -30,7 +31,17 @@ export default function LoginPage() {
     e.preventDefault();
     if (isPending) return;
 
-    setError("");
+    setErrors({});
+    setServerError("");
+
+    const newErrors: Record<string, string> = {};
+    if (!email) newErrors.email = "Email is required";
+    if (!password) newErrors.password = "Password is required";
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+
     setIsPending(true);
 
     try {
@@ -40,14 +51,14 @@ export default function LoginPage() {
       });
 
       if (authError) {
-        setError(authError.message);
+        setServerError(authError.message);
         return;
       }
 
       router.push("/dashboard");
       router.refresh();
     } catch {
-      setError("An unexpected error occurred. Please try again.");
+      setServerError("An unexpected error occurred. Please try again.");
     } finally {
       setIsPending(false);
     }
@@ -62,7 +73,7 @@ export default function LoginPage() {
     });
 
     if (authError) {
-      setError(authError.message);
+      setServerError(authError.message);
     }
   }
 
@@ -86,6 +97,9 @@ export default function LoginPage() {
               autoComplete="email"
               disabled={isPending}
             />
+            {errors.email && (
+              <p className="text-sm text-destructive" role="alert">{errors.email}</p>
+            )}
           </div>
           <div className="flex flex-col gap-2">
             <Label htmlFor="password">Password</Label>
@@ -99,6 +113,9 @@ export default function LoginPage() {
               autoComplete="current-password"
               disabled={isPending}
             />
+            {errors.password && (
+              <p className="text-sm text-destructive" role="alert">{errors.password}</p>
+            )}
           </div>
           <div className="flex justify-end">
             <Link
@@ -109,9 +126,9 @@ export default function LoginPage() {
             </Link>
           </div>
 
-          {error && (
+          {serverError && (
             <p className="text-sm text-destructive" role="alert">
-              {error}
+              {serverError}
             </p>
           )}
 

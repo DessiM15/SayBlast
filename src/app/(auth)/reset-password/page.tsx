@@ -18,22 +18,22 @@ export default function ResetPasswordPage() {
   const router = useRouter();
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [error, setError] = useState("");
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [serverError, setServerError] = useState("");
   const [isPending, setIsPending] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (isPending) return;
 
-    setError("");
+    setErrors({});
+    setServerError("");
 
-    if (password.length < 8) {
-      setError("Password must be at least 8 characters");
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      setError("Passwords do not match");
+    const newErrors: Record<string, string> = {};
+    if (password.length < 8) newErrors.password = "Password must be at least 8 characters";
+    if (password !== confirmPassword) newErrors.confirmPassword = "Passwords do not match";
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
       return;
     }
 
@@ -46,14 +46,14 @@ export default function ResetPasswordPage() {
       });
 
       if (updateError) {
-        setError(updateError.message);
+        setServerError(updateError.message);
         return;
       }
 
       router.push("/dashboard");
       router.refresh();
     } catch {
-      setError("An unexpected error occurred. Please try again.");
+      setServerError("An unexpected error occurred. Please try again.");
     } finally {
       setIsPending(false);
     }
@@ -80,6 +80,9 @@ export default function ResetPasswordPage() {
               minLength={8}
               disabled={isPending}
             />
+            {errors.password && (
+              <p className="text-sm text-destructive" role="alert">{errors.password}</p>
+            )}
           </div>
           <div className="flex flex-col gap-2">
             <Label htmlFor="confirm-password">Confirm password</Label>
@@ -93,11 +96,14 @@ export default function ResetPasswordPage() {
               autoComplete="new-password"
               disabled={isPending}
             />
+            {errors.confirmPassword && (
+              <p className="text-sm text-destructive" role="alert">{errors.confirmPassword}</p>
+            )}
           </div>
 
-          {error && (
+          {serverError && (
             <p className="text-sm text-destructive" role="alert">
-              {error}
+              {serverError}
             </p>
           )}
 

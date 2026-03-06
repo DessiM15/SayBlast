@@ -17,7 +17,8 @@ import {
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
-  const [error, setError] = useState("");
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [serverError, setServerError] = useState("");
   const [isPending, setIsPending] = useState(false);
   const [isSent, setIsSent] = useState(false);
 
@@ -25,7 +26,14 @@ export default function ForgotPasswordPage() {
     e.preventDefault();
     if (isPending) return;
 
-    setError("");
+    setErrors({});
+    setServerError("");
+
+    if (!email) {
+      setErrors({ email: "Email is required" });
+      return;
+    }
+
     setIsPending(true);
 
     try {
@@ -35,13 +43,13 @@ export default function ForgotPasswordPage() {
       });
 
       if (resetError) {
-        setError(resetError.message);
+        setServerError(resetError.message);
         return;
       }
 
       setIsSent(true);
     } catch {
-      setError("An unexpected error occurred. Please try again.");
+      setServerError("An unexpected error occurred. Please try again.");
     } finally {
       setIsPending(false);
     }
@@ -98,11 +106,14 @@ export default function ForgotPasswordPage() {
               autoComplete="email"
               disabled={isPending}
             />
+            {errors.email && (
+              <p className="text-sm text-destructive" role="alert">{errors.email}</p>
+            )}
           </div>
 
-          {error && (
+          {serverError && (
             <p className="text-sm text-destructive" role="alert">
-              {error}
+              {serverError}
             </p>
           )}
 
