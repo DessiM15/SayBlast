@@ -97,6 +97,34 @@ export async function middleware(request: NextRequest) {
     }
   }
 
+  // Rate-limit CRUD API endpoints
+  if (
+    (pathname.startsWith("/api/campaigns") &&
+      !pathname.endsWith("/send")) ||
+    pathname.startsWith("/api/audiences") ||
+    pathname.startsWith("/api/templates") ||
+    (pathname.startsWith("/api/contacts") &&
+      !pathname.startsWith("/api/contacts/upload"))
+  ) {
+    const ip =
+      request.headers.get("x-forwarded-for")?.split(",")[0].trim() ??
+      "unknown";
+    const { success, remaining } = await rateLimit(`crud:${ip}`, 30, 60_000);
+
+    if (!success) {
+      return NextResponse.json(
+        { error: "Too many requests. Please try again later." },
+        {
+          status: 429,
+          headers: {
+            "Retry-After": "60",
+            "X-RateLimit-Remaining": String(remaining),
+          },
+        },
+      );
+    }
+  }
+
   // Allow cron endpoints without any session handling
   if (pathname.startsWith("/api/cron")) {
     return NextResponse.next();
