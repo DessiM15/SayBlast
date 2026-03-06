@@ -29,8 +29,12 @@ export default function RegisterStep2({
       return;
     }
 
+    const nonce = crypto.randomUUID();
+    document.cookie = `oauth_nonce=${nonce}; path=/; max-age=600; SameSite=Lax; Secure`;
+
     const redirectUri = `${window.location.origin}/api/auth/callback/google-email`;
     const scope = "https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/userinfo.email";
+    const state = JSON.stringify({ returnTo: "/dashboard", nonce });
     const params = new URLSearchParams({
       client_id: clientId,
       redirect_uri: redirectUri,
@@ -38,6 +42,7 @@ export default function RegisterStep2({
       scope,
       access_type: "offline",
       prompt: "consent",
+      state,
     });
 
     window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
@@ -52,14 +57,19 @@ export default function RegisterStep2({
       return;
     }
 
+    const nonce = crypto.randomUUID();
+    document.cookie = `oauth_nonce=${nonce}; path=/; max-age=600; SameSite=Lax; Secure`;
+
     const redirectUri = `${window.location.origin}/api/auth/callback/microsoft-email`;
     const scope = "https://outlook.office365.com/Mail.Send offline_access openid email";
+    const state = JSON.stringify({ returnTo: "/dashboard", nonce });
     const params = new URLSearchParams({
       client_id: clientId,
       redirect_uri: redirectUri,
       response_type: "code",
       scope,
       prompt: "consent",
+      state,
     });
 
     window.location.href = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?${params.toString()}`;

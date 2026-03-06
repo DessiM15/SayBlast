@@ -85,10 +85,13 @@ export default function EmailProviderSettings({
       return;
     }
 
+    const nonce = crypto.randomUUID();
+    document.cookie = `oauth_nonce=${nonce}; path=/; max-age=600; SameSite=Lax; Secure`;
+
     const redirectUri = `${window.location.origin}/api/auth/callback/google-email`;
     const scope =
       "https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/userinfo.email";
-    const state = JSON.stringify({ returnTo: "/settings" });
+    const state = JSON.stringify({ returnTo: "/settings", nonce });
     const params = new URLSearchParams({
       client_id: clientId,
       redirect_uri: redirectUri,
@@ -111,10 +114,13 @@ export default function EmailProviderSettings({
       return;
     }
 
+    const nonce = crypto.randomUUID();
+    document.cookie = `oauth_nonce=${nonce}; path=/; max-age=600; SameSite=Lax; Secure`;
+
     const redirectUri = `${window.location.origin}/api/auth/callback/microsoft-email`;
     const scope =
       "https://outlook.office365.com/Mail.Send offline_access openid email";
-    const state = JSON.stringify({ returnTo: "/settings" });
+    const state = JSON.stringify({ returnTo: "/settings", nonce });
     const params = new URLSearchParams({
       client_id: clientId,
       redirect_uri: redirectUri,

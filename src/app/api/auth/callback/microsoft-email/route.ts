@@ -1,24 +1,29 @@
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { db } from "@/lib/db";
 import { EmailProvider } from "@/generated/prisma/enums";
 import { encrypt } from "@/lib/encryption";
 
-function parseReturnTo(stateParam: string | null): string {
-  if (!stateParam) return "/dashboard";
+interface OAuthState {
+  returnTo: string;
+  nonce?: string;
+}
+
+function parseOAuthState(stateParam: string | null): OAuthState {
+  if (!stateParam) return { returnTo: "/dashboard" };
   try {
-    const parsed = JSON.parse(stateParam) as { returnTo?: string };
-    if (
+    const parsed = JSON.parse(stateParam) as { returnTo?: string; nonce?: string };
+    const returnTo =
       typeof parsed.returnTo === "string" &&
       parsed.returnTo.startsWith("/") &&
       !parsed.returnTo.startsWith("//")
-    ) {
-      return parsed.returnTo;
-    }
+        ? parsed.returnTo
+        : "/dashboard";
+    return { returnTo, nonce: typeof parsed.nonce === "string" ? parsed.nonce : undefined };
   } catch {
-    // Invalid JSON — ignore
+    return { returnTo: "/dashboard" };
   }
-  return "/dashboard";
 }
 
 export async function GET(request: Request) {
@@ -26,7 +31,7 @@ export async function GET(request: Request) {
   const code = searchParams.get("code");
   const error = searchParams.get("error");
   const stateParam = searchParams.get("state");
-  const returnTo = parseReturnTo(stateParam);
+  const { returnTo, nonce: stateNonce } = parseOAuthState(stateParam);
 
   const errorRedirect =
     returnTo === "/settings" ? "/settings" : "/register?step=2";
@@ -41,6 +46,17 @@ export async function GET(request: Request) {
   if (!code) {
     return NextResponse.redirect(
       `${origin}${errorRedirect}${errorRedirect.includes("?") ? "&" : "?"}error=outlook_no_code`
+    );
+  }
+
+  // Verify OAuth CSRF nonce
+  const cookieStore = await cookies();
+  const cookieNonce = cookieStore.get("oauth_nonce")?.value;
+  cookieStore.delete("oauth_nonce");
+
+  if (!cookieNonce || !stateNonce || cookieNonce !== stateNonce) {
+    return NextResponse.redirect(
+      `${origin}${errorRedirect}${errorRedirect.includes("?") ? "&" : "?"}error=csrf_failed`
     );
   }
 
