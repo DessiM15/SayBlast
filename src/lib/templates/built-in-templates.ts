@@ -179,7 +179,7 @@ export const BUILT_IN_TEMPLATES: BuiltInTemplate[] = [
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f9fafb;border-radius:8px;overflow:hidden;">
       <tr><td style="padding:20px 24px;border-bottom:1px solid #e4e4e7;">
         <p style="margin:0;color:#a1a1aa;font-size:12px;text-transform:uppercase;letter-spacing:1px;">Date & Time</p>
-        <p style="margin:4px 0 0;color:#18181b;font-size:15px;font-weight:bold;">March 15, 2026 at 6:00 PM</p>
+        <p style="margin:4px 0 0;color:#18181b;font-size:15px;font-weight:bold;">[Event Date & Time]</p>
       </td></tr>
       <tr><td style="padding:20px 24px;border-bottom:1px solid #e4e4e7;">
         <p style="margin:0;color:#a1a1aa;font-size:12px;text-transform:uppercase;letter-spacing:1px;">Location</p>
