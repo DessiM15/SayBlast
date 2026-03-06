@@ -143,18 +143,20 @@ export async function DELETE(
     }
 
     const now = new Date();
-    await db.audienceList.update({
-      where: { id },
-      data: { deletedAt: now },
-    });
-    await db.contact.updateMany({
-      where: { audienceListId: id },
-      data: { deletedAt: now },
-    });
-    await db.campaign.updateMany({
-      where: { audienceListId: id },
-      data: { audienceListId: null },
-    });
+    await db.$transaction([
+      db.audienceList.update({
+        where: { id },
+        data: { deletedAt: now },
+      }),
+      db.contact.updateMany({
+        where: { audienceListId: id },
+        data: { deletedAt: now },
+      }),
+      db.campaign.updateMany({
+        where: { audienceListId: id },
+        data: { audienceListId: null },
+      }),
+    ]);
 
     return NextResponse.json({ success: true });
   } catch (error) {

@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { LogOut, Settings } from "lucide-react";
 import MobileNav from "@/components/layout/mobile-nav";
+import ThemeToggle from "@/components/layout/theme-toggle";
 import type { SessionUser } from "@/types/auth";
 
 interface TopbarProps {
@@ -42,38 +43,41 @@ export default function Topbar({ user }: TopbarProps) {
         <MobileNav />
       </div>
 
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="ghost" className="flex items-center gap-2">
-            <Avatar className="h-8 w-8">
-              <AvatarImage src={user.image ?? undefined} alt={user.name} />
-              <AvatarFallback className="bg-gradient-to-r from-[#F6D365] to-[#FDA085] text-xs text-foreground">
-                {initials}
-              </AvatarFallback>
-            </Avatar>
-            <span className="hidden text-sm font-medium md:inline-block">
-              {user.name}
-            </span>
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-48">
-          <DropdownMenuItem
-            className="cursor-pointer"
-            onClick={() => router.push("/settings")}
-          >
-            <Settings className="mr-2 h-4 w-4" />
-            Settings
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem
-            className="cursor-pointer text-destructive"
-            onClick={handleLogout}
-          >
-            <LogOut className="mr-2 h-4 w-4" />
-            Sign out
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+      <div className="flex items-center gap-1">
+        <ThemeToggle />
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" className="flex items-center gap-2">
+              <Avatar className="h-8 w-8">
+                <AvatarImage src={user.image ?? undefined} alt={user.name} />
+                <AvatarFallback className="bg-gradient-to-r from-[#F6D365] to-[#FDA085] text-xs text-foreground">
+                  {initials}
+                </AvatarFallback>
+              </Avatar>
+              <span className="hidden text-sm font-medium md:inline-block">
+                {user.name}
+              </span>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-48">
+            <DropdownMenuItem
+              className="cursor-pointer"
+              onClick={() => router.push("/settings")}
+            >
+              <Settings className="mr-2 h-4 w-4" />
+              Settings
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              className="cursor-pointer text-destructive"
+              onClick={handleLogout}
+            >
+              <LogOut className="mr-2 h-4 w-4" />
+              Sign out
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
     </header>
   );
 }
