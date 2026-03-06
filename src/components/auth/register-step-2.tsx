@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import SmtpForm from "@/components/auth/smtp-form";
-import type { EmailProvider } from "@/types/auth";
+import { EmailProvider } from "@/generated/prisma/enums";
 
 interface RegisterStep2Props {
   userId: string;
@@ -88,7 +88,7 @@ export default function RegisterStep2({
     }
   }
 
-  if (selectedProvider === "smtp") {
+  if (selectedProvider === EmailProvider.smtp) {
     return (
       <div className="flex flex-col gap-4">
         <Button
@@ -147,7 +147,7 @@ export default function RegisterStep2({
       <Button
         variant="outline"
         className="flex h-auto w-full flex-col items-start gap-1 p-4"
-        onClick={() => setSelectedProvider("smtp")}
+        onClick={() => setSelectedProvider(EmailProvider.smtp)}
       >
         <span className="font-medium">Connect via SMTP</span>
         <span className="text-xs text-muted-foreground">

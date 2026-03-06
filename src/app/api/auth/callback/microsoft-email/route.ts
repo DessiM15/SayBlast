@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { db } from "@/lib/db";
+import { EmailProvider } from "@/generated/prisma/enums";
 import { encrypt } from "@/lib/encryption";
 
 function parseReturnTo(stateParam: string | null): string {
@@ -109,7 +110,7 @@ export async function GET(request: Request) {
 
     // Store pending connection data — user must confirm before it's saved
     const pendingData = JSON.stringify({
-      provider: "outlook",
+      provider: EmailProvider.outlook,
       emailAddress,
       accessToken: tokenData.access_token,
       refreshToken: tokenData.refresh_token,

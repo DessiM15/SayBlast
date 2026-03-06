@@ -1,15 +1,16 @@
 import { createTransport, type Transporter } from "nodemailer";
 import type { User } from "@/generated/prisma/client";
+import { EmailProvider } from "@/generated/prisma/enums";
 import { decrypt } from "@/lib/encryption";
 import { refreshTokenIfNeeded } from "@/lib/email/token-refresh";
 
 export async function createEmailTransport(user: User): Promise<Transporter> {
   switch (user.emailProvider) {
-    case "gmail":
+    case EmailProvider.gmail:
       return createGmailTransport(user);
-    case "outlook":
+    case EmailProvider.outlook:
       return createOutlookTransport(user);
-    case "smtp":
+    case EmailProvider.smtp:
       return createSmtpTransport(user);
     default:
       throw new Error(`Unknown email provider: ${user.emailProvider}`);

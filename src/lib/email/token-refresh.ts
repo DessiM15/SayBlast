@@ -1,4 +1,5 @@
 import type { User } from "@/generated/prisma/client";
+import { EmailProvider } from "@/generated/prisma/enums";
 import { db } from "@/lib/db";
 import { encrypt, decrypt } from "@/lib/encryption";
 
@@ -17,9 +18,9 @@ export async function refreshTokenIfNeeded(user: User): Promise<User> {
   if (!isExpired) return user;
 
   switch (user.emailProvider) {
-    case "gmail":
+    case EmailProvider.gmail:
       return refreshGmailToken(user);
-    case "outlook":
+    case EmailProvider.outlook:
       return refreshOutlookToken(user);
     default:
       return user;

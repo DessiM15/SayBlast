@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod/v4";
 import { requireSession } from "@/lib/auth/session";
 import { db } from "@/lib/db";
+import { EmailProvider } from "@/generated/prisma/enums";
 import { encrypt } from "@/lib/encryption";
 
 const ConnectSmtpSchema = z.object({
@@ -34,7 +35,7 @@ export async function POST(req: Request) {
     await db.user.update({
       where: { id: session.id },
       data: {
-        emailProvider: "smtp",
+        emailProvider: EmailProvider.smtp,
         emailAddress: username,
         smtpHost: host,
         smtpPort: port,

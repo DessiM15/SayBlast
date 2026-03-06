@@ -1,4 +1,5 @@
 import type { User } from "@/generated/prisma/client";
+import { EmailProvider } from "@/generated/prisma/enums";
 
 export const baseUser: User = {
   id: "user-1",
@@ -6,7 +7,7 @@ export const baseUser: User = {
   email: "test@example.com",
   passwordHash: null,
   image: null,
-  emailProvider: "gmail",
+  emailProvider: EmailProvider.gmail,
   emailAddress: "test@example.com",
   emailAccessToken: "access-token-123",
   emailRefreshToken: "refresh-token-456",
@@ -26,7 +27,7 @@ export const baseUser: User = {
 export const smtpUser: User = {
   ...baseUser,
   id: "user-smtp",
-  emailProvider: "smtp",
+  emailProvider: EmailProvider.smtp,
   smtpHost: "smtp.example.com",
   smtpPort: 587,
   smtpUser: "smtp-user",
@@ -37,5 +38,5 @@ export const smtpUser: User = {
 export const outlookUser: User = {
   ...baseUser,
   id: "user-outlook",
-  emailProvider: "outlook",
+  emailProvider: EmailProvider.outlook,
 };

@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server";
 import { requireSession } from "@/lib/auth/session";
 import { db } from "@/lib/db";
+import { EmailProvider } from "@/generated/prisma/enums";
 import { decrypt, encrypt } from "@/lib/encryption";
 
 const MAX_PENDING_AGE_MS = 10 * 60 * 1000; // 10 minutes
 
 interface PendingEmailData {
-  provider: string;
+  provider: EmailProvider;
   emailAddress: string;
   accessToken: string;
   refreshToken: string;

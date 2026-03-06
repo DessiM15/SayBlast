@@ -1,3 +1,4 @@
+import type { EmailProvider } from "@/generated/prisma/enums";
 import { baseUser, smtpUser, outlookUser } from "@/test/fixtures/users";
 import { createEmailTransport } from "./transport-factory";
 
@@ -49,7 +50,7 @@ describe("createEmailTransport", () => {
   });
 
   it("throws for unknown provider", async () => {
-    const unknownUser = { ...baseUser, emailProvider: "yahoo" };
+    const unknownUser = { ...baseUser, emailProvider: "yahoo" as EmailProvider };
 
     await expect(createEmailTransport(unknownUser)).rejects.toThrow(
       "Unknown email provider: yahoo"

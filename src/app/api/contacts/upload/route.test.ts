@@ -14,7 +14,7 @@ const mockSession = {
   name: "Test",
   image: null,
   onboardingComplete: true,
-  emailProvider: "gmail",
+  emailProvider: "gmail" as const,
   emailAddress: "test@example.com",
   emailVerified: true,
 };

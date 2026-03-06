@@ -15,10 +15,10 @@ import {
 } from "@/components/ui/dialog";
 import SmtpForm from "@/components/auth/smtp-form";
 import { EMAIL_PROVIDERS } from "@/lib/constants";
-import type { EmailProvider } from "@/types/auth";
+import { EmailProvider } from "@/generated/prisma/enums";
 
 interface EmailSettings {
-  emailProvider: string | null;
+  emailProvider: EmailProvider | null;
   emailAddress: string | null;
   emailVerified: boolean;
   smtpHost: string | null;
@@ -42,7 +42,7 @@ export default function EmailProviderSettings({
   const [error, setError] = useState("");
 
   const providerInfo = settings.emailProvider
-    ? EMAIL_PROVIDERS[settings.emailProvider as keyof typeof EMAIL_PROVIDERS]
+    ? EMAIL_PROVIDERS[settings.emailProvider]
     : null;
 
   async function handleDisconnect() {
@@ -135,7 +135,7 @@ export default function EmailProviderSettings({
 
   // State B: Provider picker
   if (showPicker) {
-    if (selectedProvider === "smtp") {
+    if (selectedProvider === EmailProvider.smtp) {
       return (
         <div className="flex flex-col gap-4">
           <Button
@@ -193,7 +193,7 @@ export default function EmailProviderSettings({
         <Button
           variant="outline"
           className="flex h-auto w-full flex-col items-start gap-1 p-4"
-          onClick={() => setSelectedProvider("smtp")}
+          onClick={() => setSelectedProvider(EmailProvider.smtp)}
         >
           <span className="font-medium">Connect via SMTP</span>
           <span className="text-xs text-muted-foreground">
@@ -236,7 +236,7 @@ export default function EmailProviderSettings({
           {settings.emailAddress ?? "Not connected"}
         </p>
       </div>
-      {settings.emailProvider === "smtp" && (
+      {settings.emailProvider === EmailProvider.smtp && (
         <div>
           <p className="text-sm text-muted-foreground">SMTP Server</p>
           <p className="font-medium">
