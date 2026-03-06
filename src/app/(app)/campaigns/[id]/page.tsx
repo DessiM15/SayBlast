@@ -10,34 +10,21 @@ import { Badge } from "@/components/ui/badge";
 import {
   Card,
   CardContent,
-  CardDescription,
-  CardHeader,
 } from "@/components/ui/card";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  AlertTriangle,
   ArrowLeft,
   FileText,
   Loader2,
   Pencil,
   Send,
   Mail,
-  ShieldOff,
-  Users,
-  Calendar,
-  CheckCircle2,
 } from "lucide-react";
 import SendProgress from "@/components/campaigns/send-progress";
 import SendLogTable from "@/components/campaigns/send-log-table";
+import SendConfirmDialog from "@/components/campaigns/send-confirm-dialog";
+import SaveTemplateDialog from "@/components/campaigns/save-template-dialog";
+import CampaignInfoGrid from "@/components/campaigns/campaign-info-grid";
+import SkippedWarning from "@/components/campaigns/skipped-warning";
 import type { SendLogEntry } from "@/components/campaigns/send-log-table";
 
 interface CampaignDetail {
@@ -72,10 +59,6 @@ const STATUS_COLORS: Record<string, string> = {
   [CampaignStatus.failed]: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
 };
 
-function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleString();
-}
-
 export default function CampaignDetailPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
@@ -90,8 +73,6 @@ export default function CampaignDetailPage() {
   const [sendLogTotal, setSendLogTotal] = useState(0);
   const [showSendConfirm, setShowSendConfirm] = useState(false);
   const [showSaveTemplate, setShowSaveTemplate] = useState(false);
-  const [templateName, setTemplateName] = useState("");
-  const [isSavingTemplate, setIsSavingTemplate] = useState(false);
 
   const loadCampaign = useCallback(async () => {
     try {
@@ -142,7 +123,6 @@ export default function CampaignDetailPage() {
         result: { sent: number; skipped: number; failed: number };
       };
 
-      // Warn if all recipients were skipped due to cooldown
       if (
         data.result.sent === 0 &&
         data.result.skipped > 0 &&
@@ -161,44 +141,12 @@ export default function CampaignDetailPage() {
         toast.error("Campaign sending failed for all recipients.");
       }
 
-      // Reload to get updated stats
       await loadCampaign();
     } catch (err) {
       const message = err instanceof Error ? err.message : "Send failed";
       toast.error(message);
     } finally {
       setIsSending(false);
-    }
-  }
-
-  async function handleSaveAsTemplate() {
-    if (!campaign?.htmlBody) return;
-
-    setIsSavingTemplate(true);
-    try {
-      const response = await fetch("/api/templates", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: templateName,
-          htmlTemplate: campaign.htmlBody,
-        }),
-      });
-
-      if (!response.ok) {
-        const data = (await response.json()) as { error?: string };
-        throw new Error(data.error ?? "Failed to save template");
-      }
-
-      toast.success("Template saved!");
-      setShowSaveTemplate(false);
-      setTemplateName("");
-    } catch (err) {
-      const message =
-        err instanceof Error ? err.message : "Failed to save template";
-      toast.error(message);
-    } finally {
-      setIsSavingTemplate(false);
     }
   }
 
@@ -253,10 +201,7 @@ export default function CampaignDetailPage() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => {
-                setTemplateName(`${campaign.name} Template`);
-                setShowSaveTemplate(true);
-              }}
+              onClick={() => setShowSaveTemplate(true)}
             >
               <FileText className="mr-1 h-4 w-4" />
               Save as Template
@@ -304,83 +249,11 @@ export default function CampaignDetailPage() {
       {campaign.status === CampaignStatus.sent &&
         campaign.sentCount === 0 &&
         campaign.skippedCount > 0 && (
-          <div className="flex items-start gap-3 rounded-lg border border-yellow-200 bg-yellow-50 dark:border-yellow-800 dark:bg-yellow-950 p-4">
-            <ShieldOff className="mt-0.5 h-5 w-5 shrink-0 text-yellow-600 dark:text-yellow-400" />
-            <div>
-              <p className="text-sm font-medium text-yellow-800 dark:text-yellow-200">
-                All recipients were skipped
-              </p>
-              <p className="mt-1 text-sm text-yellow-700 dark:text-yellow-300">
-                All {campaign.skippedCount} recipient(s) were within the 72-hour
-                anti-spam cooldown. No emails were delivered. Try again after the
-                cooldown period expires.
-              </p>
-            </div>
-          </div>
+          <SkippedWarning skippedCount={campaign.skippedCount} />
         )}
 
       {/* Details Grid */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription className="flex items-center gap-1">
-              <Users className="h-3.5 w-3.5" />
-              Audience
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm font-medium">
-              {campaign.audienceList?.name ?? "No audience"}
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription className="flex items-center gap-1">
-              <Calendar className="h-3.5 w-3.5" />
-              {campaign.sentAt ? "Sent At" : "Scheduled For"}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm font-medium">
-              {campaign.sentAt
-                ? formatDate(campaign.sentAt)
-                : campaign.scheduledAt
-                  ? formatDate(campaign.scheduledAt)
-                  : "Not scheduled"}
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription className="flex items-center gap-1">
-              <Mail className="h-3.5 w-3.5" />
-              Recipients
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm font-medium">
-              {campaign.totalRecipients}
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription className="flex items-center gap-1">
-              <CheckCircle2 className="h-3.5 w-3.5" />
-              Created
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm font-medium">
-              {formatDate(campaign.createdAt)}
-            </p>
-          </CardContent>
-        </Card>
-      </div>
+      <CampaignInfoGrid campaign={campaign} />
 
       {/* Send Stats */}
       {campaign.totalRecipients > 0 && (
@@ -426,102 +299,26 @@ export default function CampaignDetailPage() {
           </Card>
         )}
 
-      {/* Send Confirmation Dialog */}
-      <Dialog open={showSendConfirm} onOpenChange={setShowSendConfirm}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-yellow-500" />
-              Confirm Send
-            </DialogTitle>
-            <DialogDescription>
-              This action cannot be undone. Emails will be sent immediately.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex flex-col gap-2 text-sm">
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Campaign</span>
-              <span className="font-medium">{campaign.name}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Subject</span>
-              <span className="font-medium">{campaign.subjectLine}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Audience</span>
-              <span className="font-medium">
-                {campaign.audienceList?.name ?? "Unknown"}
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Recipients</span>
-              <span className="font-medium">{campaign.totalRecipients}</span>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setShowSendConfirm(false)}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={() => {
-                setShowSendConfirm(false);
-                handleSendNow();
-              }}
-              disabled={isSending}
-              className="bg-gradient-to-r from-[#F6D365] to-[#FDA085] text-foreground hover:opacity-90"
-            >
-              <Send className="mr-1 h-4 w-4" />
-              Send Now
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Dialogs */}
+      <SendConfirmDialog
+        campaign={campaign}
+        open={showSendConfirm}
+        onOpenChange={setShowSendConfirm}
+        isSending={isSending}
+        onConfirm={() => {
+          setShowSendConfirm(false);
+          handleSendNow();
+        }}
+      />
 
-      {/* Save as Template Dialog */}
-      <Dialog open={showSaveTemplate} onOpenChange={setShowSaveTemplate}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Save as Template</DialogTitle>
-            <DialogDescription>
-              Save this campaign&apos;s email content as a reusable template.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="template-name">Template Name</Label>
-            <Input
-              id="template-name"
-              value={templateName}
-              onChange={(e) => setTemplateName(e.target.value)}
-              placeholder="Enter template name"
-            />
-          </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setShowSaveTemplate(false)}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleSaveAsTemplate}
-              disabled={isSavingTemplate || templateName.trim() === ""}
-              className="bg-gradient-to-r from-[#F6D365] to-[#FDA085] text-foreground hover:opacity-90"
-            >
-              {isSavingTemplate ? (
-                <>
-                  <Loader2 className="mr-1 h-4 w-4 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                "Save Template"
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {campaign.htmlBody && (
+        <SaveTemplateDialog
+          open={showSaveTemplate}
+          onOpenChange={setShowSaveTemplate}
+          defaultName={`${campaign.name} Template`}
+          htmlBody={campaign.htmlBody}
+        />
+      )}
     </div>
   );
 }
