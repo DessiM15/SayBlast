@@ -84,6 +84,7 @@ export default function LoginPage() {
               onChange={(e) => setEmail(e.target.value)}
               required
               autoComplete="email"
+              disabled={isPending}
             />
           </div>
           <div className="flex flex-col gap-2">
@@ -96,6 +97,7 @@ export default function LoginPage() {
               onChange={(e) => setPassword(e.target.value)}
               required
               autoComplete="current-password"
+              disabled={isPending}
             />
           </div>
           <div className="flex justify-end">

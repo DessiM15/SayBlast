@@ -103,6 +103,7 @@ export default function RegisterStep1({ onComplete }: RegisterStep1Props) {
             onChange={(e) => setName(e.target.value)}
             required
             autoComplete="name"
+            disabled={isPending}
           />
         </div>
         <div className="flex flex-col gap-2">
@@ -115,6 +116,7 @@ export default function RegisterStep1({ onComplete }: RegisterStep1Props) {
             onChange={(e) => setEmail(e.target.value)}
             required
             autoComplete="email"
+            disabled={isPending}
           />
         </div>
         <div className="flex flex-col gap-2">
@@ -128,6 +130,7 @@ export default function RegisterStep1({ onComplete }: RegisterStep1Props) {
             required
             minLength={8}
             autoComplete="new-password"
+            disabled={isPending}
           />
         </div>
         <div className="flex flex-col gap-2">
@@ -140,6 +143,7 @@ export default function RegisterStep1({ onComplete }: RegisterStep1Props) {
             onChange={(e) => setConfirmPassword(e.target.value)}
             required
             autoComplete="new-password"
+            disabled={isPending}
           />
         </div>
 

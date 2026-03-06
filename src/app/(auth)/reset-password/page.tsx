@@ -78,6 +78,7 @@ export default function ResetPasswordPage() {
               required
               autoComplete="new-password"
               minLength={8}
+              disabled={isPending}
             />
           </div>
           <div className="flex flex-col gap-2">
@@ -90,6 +91,7 @@ export default function ResetPasswordPage() {
               onChange={(e) => setConfirmPassword(e.target.value)}
               required
               autoComplete="new-password"
+              disabled={isPending}
             />
           </div>
 

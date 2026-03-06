@@ -96,6 +96,7 @@ export default function ForgotPasswordPage() {
               onChange={(e) => setEmail(e.target.value)}
               required
               autoComplete="email"
+              disabled={isPending}
             />
           </div>
 
