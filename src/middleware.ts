@@ -125,8 +125,27 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  // Allow cron endpoints without any session handling
+  // Rate-limit cron endpoint to prevent abuse
   if (pathname.startsWith("/api/cron")) {
+    const ip =
+      request.headers.get("x-forwarded-for")?.split(",")[0].trim() ??
+      "unknown";
+    const { success, remaining } = await rateLimit(`cron:${ip}`, 5, 60_000);
+
+    if (!success) {
+      return NextResponse.json(
+        { error: "Too many requests. Please try again later." },
+        {
+          status: 429,
+          headers: {
+            "Retry-After": "60",
+            "X-RateLimit-Remaining": String(remaining),
+          },
+        },
+      );
+    }
+
+    // Cron uses its own Bearer token auth, skip session handling
     return NextResponse.next();
   }
 

@@ -32,6 +32,11 @@ const limiters = {
     limiter: Ratelimit.slidingWindow(30, "60 s"),
     prefix: "rl:crud",
   }),
+  cron: new Ratelimit({
+    redis,
+    limiter: Ratelimit.slidingWindow(5, "60 s"),
+    prefix: "rl:cron",
+  }),
 };
 
 export async function rateLimit(
