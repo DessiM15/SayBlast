@@ -1,3 +1,4 @@
+import { timingSafeEqual } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { sendCampaign } from "@/lib/email/campaign-sender";
@@ -18,7 +19,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (authHeader !== `Bearer ${expectedToken}`) {
+    const headerValue = authHeader ?? "";
+    const expectedValue = `Bearer ${expectedToken}`;
+    const a = Buffer.from(headerValue);
+    const b = Buffer.from(expectedValue);
+
+    if (a.length !== b.length || !timingSafeEqual(a, b)) {
       return NextResponse.json(
         { error: "Unauthorized" },
         { status: 401 }
