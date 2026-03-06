@@ -1,34 +1,73 @@
+"use client";
+
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { redirect } from "next/navigation";
-import { getSession } from "@/lib/auth/session";
-import { db } from "@/lib/db";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { Loader2, Plus } from "lucide-react";
 import CampaignList from "@/components/campaigns/campaign-list";
+import type { CampaignListItem } from "@/components/campaigns/campaign-list";
 
-export default async function CampaignsPage() {
-  const session = await getSession();
-  if (!session) redirect("/login");
+interface Pagination {
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
+}
 
-  const campaigns = await db.campaign.findMany({
-    where: { userId: session.id },
-    orderBy: { updatedAt: "desc" },
-    select: {
-      id: true,
-      name: true,
-      status: true,
-      subjectLine: true,
-      updatedAt: true,
-      audienceList: {
-        select: { name: true },
-      },
-    },
+export default function CampaignsPage() {
+  const PAGE_SIZE = 25;
+  const [pageStatus, setPageStatus] = useState<"loading" | "ready" | "error">("loading");
+  const [campaigns, setCampaigns] = useState<CampaignListItem[]>([]);
+  const [pagination, setPagination] = useState<Pagination>({
+    page: 1, pageSize: PAGE_SIZE, total: 0, totalPages: 0,
   });
 
-  const serialized = campaigns.map((c) => ({
-    ...c,
-    updatedAt: c.updatedAt.toISOString(),
-  }));
+  const loadCampaigns = useCallback(async (page: number) => {
+    try {
+      const response = await fetch(`/api/campaigns?page=${page}&pageSize=${PAGE_SIZE}`);
+      if (!response.ok) {
+        setPageStatus("error");
+        return;
+      }
+      const data = (await response.json()) as {
+        campaigns: CampaignListItem[];
+        pagination: Pagination;
+      };
+      setCampaigns(data.campaigns);
+      setPagination(data.pagination);
+      setPageStatus("ready");
+    } catch {
+      setPageStatus("error");
+    }
+  }, []);
+
+  useEffect(() => {
+    loadCampaigns(pagination.page);
+  }, [pagination.page, loadCampaigns]);
+
+  function handlePageChange(newPage: number) {
+    setPagination((prev) => ({ ...prev, page: newPage }));
+    setPageStatus("loading");
+  }
+
+  if (pageStatus === "loading") {
+    return (
+      <div className="flex items-center justify-center py-16">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (pageStatus === "error") {
+    return (
+      <div className="flex flex-col items-center gap-4 py-16">
+        <p className="text-sm text-muted-foreground">Failed to load campaigns.</p>
+        <Button variant="outline" onClick={() => loadCampaigns(pagination.page)}>
+          Retry
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -50,7 +89,11 @@ export default async function CampaignsPage() {
         </Button>
       </div>
 
-      <CampaignList campaigns={serialized} />
+      <CampaignList
+        campaigns={campaigns}
+        pagination={pagination}
+        onPageChange={handlePageChange}
+      />
     </div>
   );
 }

@@ -25,6 +25,13 @@ export interface CampaignListItem {
 
 interface CampaignListProps {
   campaigns: CampaignListItem[];
+  pagination: {
+    page: number;
+    pageSize: number;
+    total: number;
+    totalPages: number;
+  };
+  onPageChange: (page: number) => void;
 }
 
 const STATUS_FILTERS = ["all", CampaignStatus.draft, CampaignStatus.scheduled, CampaignStatus.sent] as const;
@@ -38,7 +45,7 @@ const STATUS_STYLES: Record<string, string> = {
   [CampaignStatus.failed]: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
 };
 
-export default function CampaignList({ campaigns }: CampaignListProps) {
+export default function CampaignList({ campaigns, pagination, onPageChange }: CampaignListProps) {
   const [filter, setFilter] = useState<StatusFilter>("all");
 
   const filtered =
@@ -46,7 +53,7 @@ export default function CampaignList({ campaigns }: CampaignListProps) {
       ? campaigns
       : campaigns.filter((c) => c.status === filter);
 
-  if (campaigns.length === 0) {
+  if (pagination.total === 0) {
     return (
       <div className="flex flex-col items-center gap-4 py-16">
         <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted">
@@ -137,6 +144,36 @@ export default function CampaignList({ campaigns }: CampaignListProps) {
               </Card>
             </Link>
           ))}
+        </div>
+      )}
+
+      {pagination.totalPages > 1 && (
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-muted-foreground">
+            Showing {((pagination.page - 1) * pagination.pageSize) + 1}–
+            {Math.min(pagination.page * pagination.pageSize, pagination.total)} of {pagination.total}
+          </p>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onPageChange(pagination.page - 1)}
+              disabled={pagination.page <= 1}
+            >
+              Previous
+            </Button>
+            <span className="text-sm text-muted-foreground">
+              Page {pagination.page} of {pagination.totalPages}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onPageChange(pagination.page + 1)}
+              disabled={pagination.page >= pagination.totalPages}
+            >
+              Next
+            </Button>
+          </div>
         </div>
       )}
     </div>

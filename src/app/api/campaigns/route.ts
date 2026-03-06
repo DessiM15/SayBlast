@@ -4,21 +4,42 @@ import { requireSession } from "@/lib/auth/session";
 import { db } from "@/lib/db";
 import { CampaignStatus } from "@/generated/prisma/enums";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const session = await requireSession();
 
-    const campaigns = await db.campaign.findMany({
-      where: { userId: session.id },
-      orderBy: { updatedAt: "desc" },
-      include: {
-        audienceList: {
-          select: { name: true },
+    const { searchParams } = new URL(request.url);
+    const page = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10) || 1);
+    const parsedPageSize = parseInt(searchParams.get("pageSize") ?? "25", 10) || 25;
+    const pageSize = [25, 50, 100].includes(parsedPageSize) ? parsedPageSize : 25;
+    const skip = (page - 1) * pageSize;
+
+    const [campaigns, total] = await Promise.all([
+      db.campaign.findMany({
+        where: { userId: session.id },
+        orderBy: { updatedAt: "desc" },
+        include: {
+          audienceList: {
+            select: { name: true },
+          },
         },
+        take: pageSize,
+        skip,
+      }),
+      db.campaign.count({
+        where: { userId: session.id },
+      }),
+    ]);
+
+    return NextResponse.json({
+      campaigns,
+      pagination: {
+        page,
+        pageSize,
+        total,
+        totalPages: Math.ceil(total / pageSize),
       },
     });
-
-    return NextResponse.json({ campaigns });
   } catch (error) {
     if (error instanceof Error && error.message === "Unauthorized") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
