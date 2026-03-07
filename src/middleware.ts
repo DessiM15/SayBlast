@@ -149,6 +149,30 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+  // CSRF protection: validate Origin header on state-changing API requests
+  if (
+    pathname.startsWith("/api/") &&
+    !pathname.startsWith("/api/cron") &&
+    request.method !== "GET" &&
+    request.method !== "HEAD" &&
+    request.method !== "OPTIONS"
+  ) {
+    const origin = request.headers.get("origin");
+    const referer = request.headers.get("referer");
+    const allowedOrigin = request.nextUrl.origin;
+
+    // Origin header is the primary check (sent on all cross-origin requests)
+    // Fall back to Referer if Origin is absent (some privacy proxies strip Origin)
+    const requestOrigin = origin ?? (referer ? new URL(referer).origin : null);
+
+    if (!requestOrigin || requestOrigin !== allowedOrigin) {
+      return NextResponse.json(
+        { error: "Forbidden" },
+        { status: 403 }
+      );
+    }
+  }
+
   // Allow public paths
   if (isPublicPath(pathname)) {
     const { supabaseResponse } = await updateSession(request);
