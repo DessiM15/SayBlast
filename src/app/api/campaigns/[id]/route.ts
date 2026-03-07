@@ -3,6 +3,7 @@ import { z } from "zod/v4";
 import { requireSession } from "@/lib/auth/session";
 import { db } from "@/lib/db";
 import { CampaignStatus } from "@/generated/prisma/enums";
+import { sanitizeHtml } from "@/lib/sanitize-html";
 
 const ALLOWED_PAGE_SIZES = [25, 50, 100] as const;
 
@@ -137,7 +138,7 @@ export async function PUT(
 
     if (parsed.data.name !== undefined) updateData.name = parsed.data.name;
     if (parsed.data.subjectLine !== undefined) updateData.subjectLine = parsed.data.subjectLine;
-    if (parsed.data.htmlBody !== undefined) updateData.htmlBody = parsed.data.htmlBody;
+    if (parsed.data.htmlBody !== undefined) updateData.htmlBody = sanitizeHtml(parsed.data.htmlBody);
     if (parsed.data.textBody !== undefined) updateData.textBody = parsed.data.textBody;
     if (parsed.data.status !== undefined) updateData.status = parsed.data.status;
     if (parsed.data.audienceListId !== undefined) updateData.audienceListId = parsed.data.audienceListId;

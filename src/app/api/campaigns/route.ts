@@ -3,6 +3,7 @@ import { z } from "zod/v4";
 import { requireSession } from "@/lib/auth/session";
 import { db } from "@/lib/db";
 import { CampaignStatus } from "@/generated/prisma/enums";
+import { sanitizeHtml } from "@/lib/sanitize-html";
 
 export async function GET(request: NextRequest) {
   try {
@@ -80,7 +81,7 @@ export async function POST(request: NextRequest) {
         userId: session.id,
         name: parsed.data.name,
         subjectLine: parsed.data.subjectLine,
-        htmlBody: parsed.data.htmlBody,
+        htmlBody: sanitizeHtml(parsed.data.htmlBody),
         textBody: parsed.data.textBody,
         status: parsed.data.status,
       },
