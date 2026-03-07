@@ -22,8 +22,10 @@ export const mockDb = {
   },
   sendLog: {
     findFirst: vi.fn(),
+    findMany: vi.fn(),
     create: vi.fn(),
     createMany: vi.fn(),
+    count: vi.fn(),
   },
 };
 

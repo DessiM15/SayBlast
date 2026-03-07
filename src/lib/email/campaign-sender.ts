@@ -8,9 +8,11 @@ export interface SendResult {
   sent: number;
   skipped: number;
   failed: number;
+  remaining: number;
   errors: string[];
 }
 
+const BATCH_SIZE = 5;
 const RATE_LIMIT_MS = 1000; // 1 email per second
 
 function delay(ms: number): Promise<void> {
@@ -18,8 +20,10 @@ function delay(ms: number): Promise<void> {
 }
 
 /**
- * Send a campaign to all contacts in its audience list.
- * Campaign must already be in "sending" status before calling this.
+ * Send a batch of emails for a campaign.
+ * Processes up to BATCH_SIZE contacts that haven't been sent yet.
+ * Writes send logs immediately after each email so progress survives timeouts.
+ * Returns remaining count — caller should re-invoke on next cron tick if > 0.
  */
 export async function sendCampaign(campaignId: string): Promise<SendResult> {
   const result: SendResult = {
@@ -27,6 +31,7 @@ export async function sendCampaign(campaignId: string): Promise<SendResult> {
     sent: 0,
     skipped: 0,
     failed: 0,
+    remaining: 0,
     errors: [],
   };
 
@@ -74,7 +79,25 @@ export async function sendCampaign(campaignId: string): Promise<SendResult> {
   }
 
   const contacts = campaign.audienceList.contacts;
-  const totalRecipients = contacts.length;
+
+  // Find already-processed contacts from previous batches
+  const processedLogs = await db.sendLog.findMany({
+    where: { campaignId },
+    select: { contactEmail: true },
+  });
+  const processedEmails = new Set(processedLogs.map((l) => l.contactEmail));
+
+  // Filter to unprocessed contacts and take one batch
+  const remainingContacts = contacts.filter((c) => !processedEmails.has(c.email));
+
+  if (remainingContacts.length === 0) {
+    // All contacts already processed — finalize
+    await finalizeCampaign(campaignId, contacts.length);
+    return result;
+  }
+
+  const batch = remainingContacts.slice(0, BATCH_SIZE);
+  result.remaining = remainingContacts.length - batch.length;
 
   // Create email transport for the user
   let transport;
@@ -90,23 +113,22 @@ export async function sendCampaign(campaignId: string): Promise<SendResult> {
     return result;
   }
 
-  // Accumulators for batch DB operations
-  const sendLogEntries: { campaignId: string; contactEmail: string; status: SendLogStatus; error: string | null }[] = [];
-  const sentContactIds: string[] = [];
-
-  // Process each contact sequentially
-  for (let i = 0; i < contacts.length; i++) {
-    const contact = contacts[i];
+  // Process each contact in the batch
+  for (let i = 0; i < batch.length; i++) {
+    const contact = batch[i];
 
     // Check anti-spam cooldown
     const cooldown = await checkCooldown(contact.email, campaign.userId);
 
     if (!cooldown.allowed) {
-      sendLogEntries.push({
-        campaignId,
-        contactEmail: contact.email,
-        status: SendLogStatus.skipped_cooldown,
-        error: cooldown.reason ?? null,
+      // Write send log immediately — survives timeouts
+      await db.sendLog.create({
+        data: {
+          campaignId,
+          contactEmail: contact.email,
+          status: SendLogStatus.skipped_cooldown,
+          error: cooldown.reason ?? null,
+        },
       });
       result.skipped++;
       continue;
@@ -122,57 +144,71 @@ export async function sendCampaign(campaignId: string): Promise<SendResult> {
         text: campaign.textBody ?? undefined,
       });
 
-      sendLogEntries.push({
-        campaignId,
-        contactEmail: contact.email,
-        status: SendLogStatus.sent,
-        error: null,
+      // Write send log and update contact immediately
+      await db.sendLog.create({
+        data: {
+          campaignId,
+          contactEmail: contact.email,
+          status: SendLogStatus.sent,
+          error: null,
+        },
       });
-      sentContactIds.push(contact.id);
+      await db.contact.update({
+        where: { id: contact.id },
+        data: { lastEmailedAt: new Date() },
+      });
       result.sent++;
     } catch (err) {
       const message = err instanceof Error ? err.message : "Send failed";
 
-      sendLogEntries.push({
-        campaignId,
-        contactEmail: contact.email,
-        status: SendLogStatus.failed,
-        error: message,
+      await db.sendLog.create({
+        data: {
+          campaignId,
+          contactEmail: contact.email,
+          status: SendLogStatus.failed,
+          error: message,
+        },
       });
       result.failed++;
       result.errors.push(`${contact.email}: ${message}`);
     }
 
-    // Rate limit: 1 email per second (skip delay after last contact)
-    if (i < contacts.length - 1) {
+    // Rate limit: 1 email per second (skip delay after last contact in batch)
+    if (i < batch.length - 1) {
       await delay(RATE_LIMIT_MS);
     }
   }
 
-  // Batch DB operations: ~3 calls instead of ~3N
-  if (sendLogEntries.length > 0) {
-    await db.sendLog.createMany({ data: sendLogEntries });
+  // If no more contacts remain after this batch, finalize the campaign
+  if (result.remaining === 0) {
+    await finalizeCampaign(campaignId, contacts.length);
   }
 
-  if (sentContactIds.length > 0) {
-    await db.contact.updateMany({
-      where: { id: { in: sentContactIds } },
-      data: { lastEmailedAt: new Date() },
-    });
-  }
+  return result;
+}
 
-  const finalStatus = result.sent === 0 && result.failed > 0 ? CampaignStatus.failed : CampaignStatus.sent;
+/**
+ * Compute final stats from send logs and set campaign to sent/failed.
+ */
+async function finalizeCampaign(campaignId: string, totalContacts: number): Promise<void> {
+  const [sentCount, failedCount] = await Promise.all([
+    db.sendLog.count({ where: { campaignId, status: SendLogStatus.sent } }),
+    db.sendLog.count({ where: { campaignId, status: SendLogStatus.failed } }),
+  ]);
+  const skippedCount = totalContacts - sentCount - failedCount;
+
+  const finalStatus = sentCount === 0 && failedCount > 0
+    ? CampaignStatus.failed
+    : CampaignStatus.sent;
 
   await db.campaign.update({
     where: { id: campaignId },
     data: {
       status: finalStatus,
       sentAt: new Date(),
-      totalRecipients,
-      sentCount: result.sent,
-      skippedCount: result.skipped,
+      totalRecipients: totalContacts,
+      sentCount,
+      skippedCount,
     },
   });
-
-  return result;
 }

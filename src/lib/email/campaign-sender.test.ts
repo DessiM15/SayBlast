@@ -38,11 +38,19 @@ function makeCampaign(overrides: Record<string, unknown> = {}) {
   };
 }
 
+function setupResumeMocks() {
+  // No previously processed contacts
+  mockDb.sendLog.findMany.mockResolvedValue([]);
+  // Finalization counts
+  mockDb.sendLog.count.mockResolvedValue(0);
+}
+
 describe("sendCampaign", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.useFakeTimers();
     mockCheckCooldown.mockResolvedValue({ allowed: true });
+    setupResumeMocks();
   });
 
   afterEach(() => {
@@ -94,6 +102,7 @@ describe("sendCampaign", () => {
     mockSendMail.mockResolvedValue({});
     mockDb.sendLog.create.mockResolvedValue({});
     mockDb.contact.update.mockResolvedValue({});
+    mockDb.sendLog.count.mockResolvedValueOnce(2).mockResolvedValueOnce(0);
     mockDb.campaign.update.mockResolvedValue({});
 
     const resultPromise = sendCampaign("campaign-1");
@@ -103,6 +112,7 @@ describe("sendCampaign", () => {
     expect(result.sent).toBe(2);
     expect(result.failed).toBe(0);
     expect(result.skipped).toBe(0);
+    expect(result.remaining).toBe(0);
     expect(mockSendMail).toHaveBeenCalledTimes(2);
   });
 
@@ -114,6 +124,7 @@ describe("sendCampaign", () => {
     mockSendMail.mockResolvedValue({});
     mockDb.sendLog.create.mockResolvedValue({});
     mockDb.contact.update.mockResolvedValue({});
+    mockDb.sendLog.count.mockResolvedValueOnce(1).mockResolvedValueOnce(0);
     mockDb.campaign.update.mockResolvedValue({});
 
     const resultPromise = sendCampaign("campaign-1");
@@ -131,6 +142,7 @@ describe("sendCampaign", () => {
       .mockResolvedValueOnce({});
     mockDb.sendLog.create.mockResolvedValue({});
     mockDb.contact.update.mockResolvedValue({});
+    mockDb.sendLog.count.mockResolvedValueOnce(1).mockResolvedValueOnce(1);
     mockDb.campaign.update.mockResolvedValue({});
 
     const resultPromise = sendCampaign("campaign-1");
@@ -146,6 +158,7 @@ describe("sendCampaign", () => {
     mockDb.campaign.findUnique.mockResolvedValue(makeCampaign());
     mockSendMail.mockRejectedValue(new Error("Down"));
     mockDb.sendLog.create.mockResolvedValue({});
+    mockDb.sendLog.count.mockResolvedValueOnce(0).mockResolvedValueOnce(2);
     mockDb.campaign.update.mockResolvedValue({});
 
     const resultPromise = sendCampaign("campaign-1");
@@ -171,5 +184,23 @@ describe("sendCampaign", () => {
     expect(mockDb.campaign.update).toHaveBeenCalledWith(
       expect.objectContaining({ data: { status: CampaignStatus.failed } })
     );
+  });
+
+  it("skips already-processed contacts on resume", async () => {
+    // alice was already sent in a previous batch
+    mockDb.sendLog.findMany.mockResolvedValue([{ contactEmail: "alice@example.com" }]);
+    mockDb.campaign.findUnique.mockResolvedValue(makeCampaign());
+    mockSendMail.mockResolvedValue({});
+    mockDb.sendLog.create.mockResolvedValue({});
+    mockDb.contact.update.mockResolvedValue({});
+    mockDb.sendLog.count.mockResolvedValueOnce(2).mockResolvedValueOnce(0);
+    mockDb.campaign.update.mockResolvedValue({});
+
+    const result = await sendCampaign("campaign-1");
+
+    // Only bob should be sent (alice already processed)
+    expect(result.sent).toBe(1);
+    expect(mockSendMail).toHaveBeenCalledTimes(1);
+    expect(result.remaining).toBe(0);
   });
 });

@@ -2,7 +2,6 @@ import { timingSafeEqual } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { sendCampaign } from "@/lib/email/campaign-sender";
-import type { SendResult } from "@/lib/email/campaign-sender";
 import { CampaignStatus } from "@/generated/prisma/enums";
 
 export async function POST(request: NextRequest) {
@@ -31,40 +30,68 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Find all scheduled campaigns that are due
     const now = new Date();
-    const dueCampaigns = await db.campaign.findMany({
-      where: {
-        status: CampaignStatus.scheduled,
-        scheduledAt: { lte: now },
-      },
-      select: { id: true, name: true },
+
+    // 1. Resume an in-progress campaign first (already in "sending" status)
+    let campaignId: string | null = null;
+
+    const inProgress = await db.campaign.findFirst({
+      where: { status: CampaignStatus.sending },
+      select: { id: true },
     });
 
-    if (dueCampaigns.length === 0) {
+    if (inProgress) {
+      campaignId = inProgress.id;
+    } else {
+      // 2. No in-progress campaigns — claim a scheduled one atomically
+      const due = await db.campaign.findFirst({
+        where: {
+          status: CampaignStatus.scheduled,
+          scheduledAt: { lte: now },
+        },
+        orderBy: { scheduledAt: "asc" },
+        select: { id: true },
+      });
+
+      if (due) {
+        // Atomic claim: only proceed if status is still "scheduled"
+        const claimed = await db.campaign.updateMany({
+          where: {
+            id: due.id,
+            status: CampaignStatus.scheduled,
+          },
+          data: { status: CampaignStatus.sending },
+        });
+
+        if (claimed.count > 0) {
+          campaignId = due.id;
+        }
+      }
+    }
+
+    if (!campaignId) {
       return NextResponse.json({
         message: "No campaigns due for sending",
         processed: 0,
       });
     }
 
-    const results: SendResult[] = [];
+    const result = await sendCampaign(campaignId);
 
-    for (const campaign of dueCampaigns) {
-      // Set status to "sending" before processing
-      await db.campaign.update({
-        where: { id: campaign.id },
-        data: { status: CampaignStatus.sending },
-      });
-
-      const result = await sendCampaign(campaign.id);
-      results.push(result);
+    // Log detailed errors server-side only — never expose in response
+    if (result.errors.length > 0) {
+      console.error(`[cron] Campaign ${campaignId} errors:`, result.errors);
     }
 
     return NextResponse.json({
-      message: `Processed ${results.length} campaign(s)`,
-      processed: results.length,
-      results,
+      message: result.remaining > 0
+        ? `Batch sent — ${result.remaining} contacts remaining`
+        : "Campaign complete",
+      campaignId: result.campaignId,
+      sent: result.sent,
+      failed: result.failed,
+      skipped: result.skipped,
+      remaining: result.remaining,
     });
   } catch (error) {
     console.error("Cron send error:", error);
