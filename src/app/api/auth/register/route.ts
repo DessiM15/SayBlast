@@ -7,7 +7,7 @@ import { createClient } from "@supabase/supabase-js";
 const RegisterSchema = z.object({
   name: z.string().min(1, "Name is required").max(100),
   email: z.string().email("Invalid email address"),
-  password: z.string().min(8, "Password must be at least 8 characters"),
+  password: z.string().min(8, "Password must be at least 8 characters").max(72, "Password must be 72 characters or fewer"),
 });
 
 export async function POST(req: Request) {

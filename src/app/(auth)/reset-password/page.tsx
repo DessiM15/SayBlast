@@ -31,6 +31,7 @@ export default function ResetPasswordPage() {
 
     const newErrors: Record<string, string> = {};
     if (password.length < 8) newErrors.password = "Password must be at least 8 characters";
+    if (password.length > 72) newErrors.password = "Password must be 72 characters or fewer";
     if (password !== confirmPassword) newErrors.confirmPassword = "Passwords do not match";
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
@@ -72,12 +73,13 @@ export default function ResetPasswordPage() {
             <Input
               id="password"
               type="password"
-              placeholder="New password"
+              placeholder="8–72 characters"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
               autoComplete="new-password"
               minLength={8}
+              maxLength={72}
               disabled={isPending}
             />
             {errors.password && (

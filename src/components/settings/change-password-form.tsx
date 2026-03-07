@@ -25,6 +25,11 @@ export default function ChangePasswordForm() {
       return;
     }
 
+    if (newPassword.length > 72) {
+      setError("Password must be 72 characters or fewer");
+      return;
+    }
+
     if (newPassword !== confirmPassword) {
       setError("New passwords do not match");
       return;
@@ -78,8 +83,9 @@ export default function ChangePasswordForm() {
           onChange={(e) => setNewPassword(e.target.value)}
           required
           autoComplete="new-password"
-          placeholder="Enter new password"
+          placeholder="8–72 characters"
           minLength={8}
+          maxLength={72}
         />
       </div>
       <div className="flex flex-col gap-2">

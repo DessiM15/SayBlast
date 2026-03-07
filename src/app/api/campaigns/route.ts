@@ -56,9 +56,9 @@ export async function GET(request: NextRequest) {
 
 const createCampaignSchema = z.object({
   name: z.string().min(1, "Campaign name is required"),
-  subjectLine: z.string().optional().default(""),
-  htmlBody: z.string().optional().default(""),
-  textBody: z.string().optional().default(""),
+  subjectLine: z.string().transform((s) => s.replace(/[\r\n]/g, "")).optional().default(""),
+  htmlBody: z.string().max(500000, "Email HTML body is too large").optional().default(""),
+  textBody: z.string().max(100000, "Email text body is too large").optional().default(""),
   status: z.enum([CampaignStatus.draft, CampaignStatus.scheduled]).default(CampaignStatus.draft),
 });
 

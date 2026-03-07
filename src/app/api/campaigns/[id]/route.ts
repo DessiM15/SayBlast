@@ -78,9 +78,9 @@ function isValidStatusTransition(from: CampaignStatus, to: CampaignStatus): bool
 
 const updateCampaignSchema = z.object({
   name: z.string().min(1).optional(),
-  subjectLine: z.string().optional(),
-  htmlBody: z.string().optional(),
-  textBody: z.string().optional(),
+  subjectLine: z.string().transform((s) => s.replace(/[\r\n]/g, "")).optional(),
+  htmlBody: z.string().max(500000, "Email HTML body is too large").optional(),
+  textBody: z.string().max(100000, "Email text body is too large").optional(),
   status: z.nativeEnum(CampaignStatus).optional(),
   audienceListId: z.string().nullable().optional(),
   scheduledAt: z.string().nullable().optional(),

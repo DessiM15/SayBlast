@@ -34,6 +34,7 @@ export default function RegisterStep1({ onComplete }: RegisterStep1Props) {
     if (!name.trim()) newErrors.name = "Name is required";
     if (!email) newErrors.email = "Email is required";
     if (password.length < 8) newErrors.password = "Password must be at least 8 characters";
+    if (password.length > 72) newErrors.password = "Password must be 72 characters or fewer";
     if (password !== confirmPassword) newErrors.confirmPassword = "Passwords do not match";
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
@@ -132,11 +133,12 @@ export default function RegisterStep1({ onComplete }: RegisterStep1Props) {
           <Input
             id="password"
             type="password"
-            placeholder="At least 8 characters"
+            placeholder="8–72 characters"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
             minLength={8}
+            maxLength={72}
             autoComplete="new-password"
             disabled={isPending}
           />

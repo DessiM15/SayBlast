@@ -11,7 +11,7 @@ const addContactSchema = z.object({
       firstName: z.string().optional().default(""),
       lastName: z.string().optional().default(""),
     })
-  ).min(1, "At least one contact is required"),
+  ).min(1, "At least one contact is required").max(1000, "Maximum 1,000 contacts per request"),
 });
 
 export async function POST(request: NextRequest) {
