@@ -42,6 +42,8 @@ async function createOutlookTransport(user: User): Promise<Transporter> {
     host: "smtp.office365.com",
     port: 587,
     secure: false,
+    requireTLS: true,
+    tls: { rejectUnauthorized: true },
     auth: {
       type: "OAuth2",
       user: freshUser.emailAddress!,
@@ -64,6 +66,10 @@ function createSmtpTransport(user: User): Transporter {
     host: user.smtpHost,
     port: user.smtpPort,
     secure: user.smtpSecure,
+    ...(!user.smtpSecure && {
+      requireTLS: true,
+      tls: { rejectUnauthorized: true },
+    }),
     auth: {
       user: user.smtpUser,
       pass: decryptedPassword,
