@@ -7,7 +7,7 @@ import { TranscriptType } from "@/generated/prisma/enums";
 
 const requestSchema = z.object({
   campaignId: z.string().min(1, "Campaign ID is required"),
-  transcript: z.string().min(1, "Refinement transcript is required"),
+  transcript: z.string().min(1, "Refinement transcript is required").max(10000, "Transcript is too long"),
 });
 
 export async function POST(request: NextRequest) {

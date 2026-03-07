@@ -6,7 +6,7 @@ import { processTranscript } from "@/lib/ai/process-transcript";
 import { CampaignStatus, TranscriptType } from "@/generated/prisma/enums";
 
 const requestSchema = z.object({
-  transcript: z.string().min(1, "Transcript is required"),
+  transcript: z.string().min(1, "Transcript is required").max(10000, "Transcript is too long"),
 });
 
 export async function POST(request: NextRequest) {
