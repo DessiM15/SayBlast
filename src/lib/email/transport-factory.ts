@@ -1,11 +1,25 @@
 import { createTransport, type Transporter } from "nodemailer";
-import type { User } from "@/generated/prisma/client";
 import { EmailProvider } from "@/generated/prisma/enums";
 import { decrypt } from "@/lib/encryption";
 import { refreshTokenIfNeeded } from "@/lib/email/token-refresh";
 import { env } from "@/lib/env";
 
-export async function createEmailTransport(user: User): Promise<Transporter> {
+export interface EmailTransportUser {
+  id: string;
+  email: string;
+  emailProvider: string | null;
+  emailAddress: string | null;
+  emailAccessToken: string | null;
+  emailRefreshToken: string | null;
+  emailTokenExpiry: Date | null;
+  smtpHost: string | null;
+  smtpPort: number | null;
+  smtpUser: string | null;
+  smtpPass: string | null;
+  smtpSecure: boolean;
+}
+
+export async function createEmailTransport(user: EmailTransportUser): Promise<Transporter> {
   switch (user.emailProvider) {
     case EmailProvider.gmail:
       return createGmailTransport(user);
@@ -18,7 +32,7 @@ export async function createEmailTransport(user: User): Promise<Transporter> {
   }
 }
 
-async function createGmailTransport(user: User): Promise<Transporter> {
+async function createGmailTransport(user: EmailTransportUser): Promise<Transporter> {
   // Refresh token if expired
   const freshUser = await refreshTokenIfNeeded(user);
 
@@ -35,7 +49,7 @@ async function createGmailTransport(user: User): Promise<Transporter> {
   });
 }
 
-async function createOutlookTransport(user: User): Promise<Transporter> {
+async function createOutlookTransport(user: EmailTransportUser): Promise<Transporter> {
   // Refresh token if expired
   const freshUser = await refreshTokenIfNeeded(user);
 
@@ -56,7 +70,7 @@ async function createOutlookTransport(user: User): Promise<Transporter> {
   });
 }
 
-function createSmtpTransport(user: User): Transporter {
+function createSmtpTransport(user: EmailTransportUser): Transporter {
   if (!user.smtpHost || !user.smtpPort || !user.smtpUser || !user.smtpPass) {
     throw new Error("Incomplete SMTP configuration");
   }

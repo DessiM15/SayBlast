@@ -1,4 +1,4 @@
-import type { User } from "@/generated/prisma/client";
+import type { EmailTransportUser } from "@/lib/email/transport-factory";
 import { EmailProvider } from "@/generated/prisma/enums";
 import { db } from "@/lib/db";
 import { encrypt, decrypt } from "@/lib/encryption";
@@ -9,7 +9,7 @@ import { env } from "@/lib/env";
  * Check if the user's OAuth token is expired and refresh it if needed.
  * Returns the user with fresh tokens.
  */
-export async function refreshTokenIfNeeded(user: User): Promise<User> {
+export async function refreshTokenIfNeeded(user: EmailTransportUser): Promise<EmailTransportUser> {
   if (!user.emailTokenExpiry) return user;
 
   const now = new Date();
@@ -29,7 +29,7 @@ export async function refreshTokenIfNeeded(user: User): Promise<User> {
   }
 }
 
-async function refreshGmailToken(user: User): Promise<User> {
+async function refreshGmailToken(user: EmailTransportUser): Promise<EmailTransportUser> {
   if (!user.emailRefreshToken) {
     throw new Error("No refresh token available for Gmail");
   }
@@ -66,7 +66,7 @@ async function refreshGmailToken(user: User): Promise<User> {
   return updatedUser;
 }
 
-async function refreshOutlookToken(user: User): Promise<User> {
+async function refreshOutlookToken(user: EmailTransportUser): Promise<EmailTransportUser> {
   if (!user.emailRefreshToken) {
     throw new Error("No refresh token available for Outlook");
   }

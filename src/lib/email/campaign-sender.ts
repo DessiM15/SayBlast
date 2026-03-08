@@ -39,7 +39,22 @@ export async function sendCampaign(campaignId: string): Promise<SendResult> {
   const campaign = await db.campaign.findUnique({
     where: { id: campaignId },
     include: {
-      user: true,
+      user: {
+        select: {
+          id: true,
+          email: true,
+          emailProvider: true,
+          emailAddress: true,
+          emailAccessToken: true,
+          emailRefreshToken: true,
+          emailTokenExpiry: true,
+          smtpHost: true,
+          smtpPort: true,
+          smtpUser: true,
+          smtpPass: true,
+          smtpSecure: true,
+        },
+      },
       audienceList: {
         include: {
           contacts: {
