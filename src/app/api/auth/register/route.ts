@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { createClient } from "@supabase/supabase-js";
 import { logger } from "@/lib/logger";
 import { env } from "@/lib/env";
+import { checkPwnedPassword } from "@/lib/auth/check-pwned-password";
 
 const RegisterSchema = z.object({
   name: z.string().min(1, "Name is required").max(100),
@@ -35,6 +36,21 @@ export async function POST(req: Request) {
       return NextResponse.json(
         { error: "An account with this email already exists" },
         { status: 409 }
+      );
+    }
+
+    // Check if password has been exposed in data breaches
+    const breachCount = await checkPwnedPassword(password);
+    if (breachCount > 0) {
+      return NextResponse.json(
+        {
+          error: {
+            password: [
+              "This password has appeared in a data breach and is not safe to use. Please choose a different password.",
+            ],
+          },
+        },
+        { status: 400 }
       );
     }
 

@@ -7,6 +7,7 @@ import { createClient } from "@supabase/supabase-js";
 import { createClient as createServerClient } from "@/lib/supabase/server";
 import { logger } from "@/lib/logger";
 import { env } from "@/lib/env";
+import { checkPwnedPassword } from "@/lib/auth/check-pwned-password";
 
 const changePasswordSchema = z.object({
   currentPassword: z.string().min(1, "Current password is required"),
@@ -43,6 +44,15 @@ export async function POST(request: NextRequest) {
     if (!isValid) {
       return NextResponse.json(
         { error: "Current password is incorrect" },
+        { status: 400 }
+      );
+    }
+
+    // Check if new password has been exposed in data breaches
+    const breachCount = await checkPwnedPassword(parsed.data.newPassword);
+    if (breachCount > 0) {
+      return NextResponse.json(
+        { error: "This password has appeared in a data breach and is not safe to use. Please choose a different password." },
         { status: 400 }
       );
     }

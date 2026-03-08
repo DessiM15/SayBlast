@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -41,13 +40,14 @@ export default function ResetPasswordPage() {
     setIsPending(true);
 
     try {
-      const supabase = createClient();
-      const { error: updateError } = await supabase.auth.updateUser({
-        password,
+      const response = await fetch("/api/auth/reset-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password }),
       });
-
-      if (updateError) {
-        setServerError(updateError.message);
+      if (!response.ok) {
+        const data = (await response.json()) as { error?: string };
+        setServerError(data.error ?? "Failed to reset password");
         return;
       }
 
