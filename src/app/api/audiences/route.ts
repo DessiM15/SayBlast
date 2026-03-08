@@ -58,8 +58,8 @@ export async function GET(request: NextRequest) {
 }
 
 const createAudienceSchema = z.object({
-  name: z.string().min(1, "Name is required"),
-  description: z.string().optional().default(""),
+  name: z.string().min(1, "Name is required").max(200, "Audience name is too long"),
+  description: z.string().max(1000, "Description is too long").optional().default(""),
 });
 
 export async function POST(request: NextRequest) {

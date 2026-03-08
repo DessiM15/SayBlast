@@ -7,10 +7,10 @@ import { encrypt } from "@/lib/encryption";
 import { logger } from "@/lib/logger";
 
 const ConnectSmtpSchema = z.object({
-  host: z.string().min(1, "SMTP host is required"),
+  host: z.string().min(1, "SMTP host is required").max(253, "SMTP host is too long"),
   port: z.number().int().min(1).max(65535),
-  username: z.string().min(1, "Username is required"),
-  password: z.string().min(1, "Password is required"),
+  username: z.string().min(1, "Username is required").max(200, "Username is too long"),
+  password: z.string().min(1, "Password is required").max(500, "Password is too long"),
   secure: z.boolean(),
 });
 

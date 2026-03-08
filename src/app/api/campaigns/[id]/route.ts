@@ -78,13 +78,24 @@ function isValidStatusTransition(from: CampaignStatus, to: CampaignStatus): bool
 }
 
 const updateCampaignSchema = z.object({
-  name: z.string().min(1).optional(),
-  subjectLine: z.string().transform((s) => s.replace(/[\r\n]/g, "")).optional(),
+  name: z.string().min(1).max(200, "Campaign name is too long").optional(),
+  subjectLine: z.string().max(998, "Subject line is too long").transform((s) => s.replace(/[\r\n]/g, "")).optional(),
   htmlBody: z.string().max(500000, "Email HTML body is too large").optional(),
   textBody: z.string().max(100000, "Email text body is too large").optional(),
   status: z.nativeEnum(CampaignStatus).optional(),
   audienceListId: z.string().nullable().optional(),
-  scheduledAt: z.string().nullable().optional(),
+  scheduledAt: z
+    .string()
+    .nullable()
+    .optional()
+    .refine(
+      (val) => {
+        if (val === null || val === undefined) return true;
+        const date = new Date(val);
+        return !isNaN(date.getTime());
+      },
+      { message: "Invalid date format" }
+    ),
 });
 
 export async function PUT(
@@ -132,6 +143,14 @@ export async function PUT(
             { status: 400 }
           );
         }
+        const scheduledDate = new Date(scheduledAt);
+        const oneMinuteAgo = new Date(Date.now() - 60_000);
+        if (scheduledDate < oneMinuteAgo) {
+          return NextResponse.json(
+            { error: "Scheduled date must be in the future" },
+            { status: 400 }
+          );
+        }
       }
     }
 
@@ -144,6 +163,19 @@ export async function PUT(
     if (parsed.data.status !== undefined) updateData.status = parsed.data.status;
     if (parsed.data.audienceListId !== undefined) updateData.audienceListId = parsed.data.audienceListId;
     if (parsed.data.scheduledAt !== undefined) {
+      if (parsed.data.scheduledAt !== null) {
+        const newDate = new Date(parsed.data.scheduledAt);
+        const effectiveStatus = parsed.data.status ?? existing.status;
+        if (effectiveStatus === CampaignStatus.scheduled) {
+          const oneMinuteAgo = new Date(Date.now() - 60_000);
+          if (newDate < oneMinuteAgo) {
+            return NextResponse.json(
+              { error: "Scheduled date must be in the future" },
+              { status: 400 }
+            );
+          }
+        }
+      }
       updateData.scheduledAt = parsed.data.scheduledAt
         ? new Date(parsed.data.scheduledAt)
         : null;

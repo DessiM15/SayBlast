@@ -68,8 +68,8 @@ export async function GET(
 }
 
 const updateAudienceSchema = z.object({
-  name: z.string().min(1).optional(),
-  description: z.string().optional(),
+  name: z.string().min(1).max(200, "Audience name is too long").optional(),
+  description: z.string().max(1000, "Description is too long").optional(),
 });
 
 export async function PUT(

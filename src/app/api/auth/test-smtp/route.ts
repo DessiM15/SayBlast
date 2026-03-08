@@ -6,10 +6,10 @@ import { requireSession } from "@/lib/auth/session";
 import { logger } from "@/lib/logger";
 
 const TestSmtpSchema = z.object({
-  host: z.string().min(1),
+  host: z.string().min(1).max(253),
   port: z.number().int().min(1).max(65535),
-  username: z.string().min(1),
-  password: z.string().min(1),
+  username: z.string().min(1).max(200),
+  password: z.string().min(1).max(500),
   secure: z.boolean(),
 });
 

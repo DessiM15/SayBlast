@@ -66,8 +66,8 @@ export async function GET(request: NextRequest) {
 }
 
 const createTemplateSchema = z.object({
-  name: z.string().min(1, "Template name is required"),
-  htmlTemplate: z.string().min(1, "HTML template is required"),
+  name: z.string().min(1, "Template name is required").max(200, "Template name is too long"),
+  htmlTemplate: z.string().min(1, "HTML template is required").max(500000, "HTML template is too large"),
 });
 
 export async function POST(request: NextRequest) {

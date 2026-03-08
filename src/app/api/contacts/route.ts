@@ -8,9 +8,9 @@ const addContactSchema = z.object({
   audienceListId: z.string().min(1, "Audience list ID is required"),
   contacts: z.array(
     z.object({
-      email: z.email("Invalid email address"),
-      firstName: z.string().optional().default(""),
-      lastName: z.string().optional().default(""),
+      email: z.email("Invalid email address").max(254, "Email address is too long"),
+      firstName: z.string().max(100, "First name is too long").optional().default(""),
+      lastName: z.string().max(100, "Last name is too long").optional().default(""),
     })
   ).min(1, "At least one contact is required").max(1000, "Maximum 1,000 contacts per request"),
 });
@@ -86,9 +86,9 @@ export async function POST(request: NextRequest) {
 
 const updateContactSchema = z.object({
   contactId: z.string().min(1, "Contact ID is required"),
-  email: z.email("Invalid email address").optional(),
-  firstName: z.string().optional(),
-  lastName: z.string().optional(),
+  email: z.email("Invalid email address").max(254, "Email address is too long").optional(),
+  firstName: z.string().max(100, "First name is too long").optional(),
+  lastName: z.string().max(100, "Last name is too long").optional(),
 });
 
 export async function PATCH(request: NextRequest) {
