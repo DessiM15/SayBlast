@@ -4,6 +4,7 @@ import { requireSession } from "@/lib/auth/session";
 import { db } from "@/lib/db";
 import { CampaignStatus } from "@/generated/prisma/enums";
 import { sanitizeHtml } from "@/lib/sanitize-html";
+import { logger } from "@/lib/logger";
 
 const ALLOWED_PAGE_SIZES = [25, 50, 100] as const;
 
@@ -57,7 +58,7 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    console.error("Get campaign error:", error);
+    logger.error("GET /api/campaigns/[id]", error);
     return NextResponse.json(
       { error: "Failed to fetch campaign" },
       { status: 500 }
@@ -159,7 +160,7 @@ export async function PUT(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    console.error("Update campaign error:", error);
+    logger.error("PUT /api/campaigns/[id]", error);
     return NextResponse.json(
       { error: "Failed to update campaign" },
       { status: 500 }

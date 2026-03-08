@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod/v4";
 import { requireSession } from "@/lib/auth/session";
 import { db } from "@/lib/db";
+import { logger } from "@/lib/logger";
 
 const addContactSchema = z.object({
   audienceListId: z.string().min(1, "Audience list ID is required"),
@@ -75,7 +76,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    console.error("Add contacts error:", error);
+    logger.error("POST /api/contacts", error);
     return NextResponse.json(
       { error: "Failed to add contacts" },
       { status: 500 }
@@ -159,7 +160,7 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    console.error("Update contact error:", error);
+    logger.error("PATCH /api/contacts", error);
     return NextResponse.json(
       { error: "Failed to update contact" },
       { status: 500 }
@@ -213,7 +214,7 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    console.error("Delete contact error:", error);
+    logger.error("DELETE /api/contacts", error);
     return NextResponse.json(
       { error: "Failed to delete contact" },
       { status: 500 }

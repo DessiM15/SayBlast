@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { db } from "@/lib/db";
 import { EmailProvider } from "@/generated/prisma/enums";
 import { encrypt } from "@/lib/encryption";
+import { logger } from "@/lib/logger";
 
 interface OAuthState {
   returnTo: string;
@@ -85,7 +86,7 @@ export async function GET(request: Request) {
     });
 
     if (!tokenResponse.ok) {
-      console.error("Google token exchange failed: status", tokenResponse.status);
+      logger.error("GET /api/auth/callback/google-email", `Token exchange failed: status ${tokenResponse.status}`);
       return NextResponse.redirect(
         `${origin}${errorRedirect}${errorRedirect.includes("?") ? "&" : "?"}error=gmail_token_failed`
       );
@@ -99,7 +100,7 @@ export async function GET(request: Request) {
     };
 
     if (!tokenData.refresh_token) {
-      console.error("Google did not return a refresh token");
+      logger.error("GET /api/auth/callback/google-email", "Google did not return a refresh token");
       return NextResponse.redirect(
         `${origin}${errorRedirect}${errorRedirect.includes("?") ? "&" : "?"}error=gmail_no_refresh_token`
       );
@@ -114,7 +115,7 @@ export async function GET(request: Request) {
     );
 
     if (!userinfoResponse.ok) {
-      console.error("Failed to fetch Google userinfo");
+      logger.error("GET /api/auth/callback/google-email", "Failed to fetch Google userinfo");
       return NextResponse.redirect(
         `${origin}${errorRedirect}${errorRedirect.includes("?") ? "&" : "?"}error=gmail_userinfo_failed`
       );
@@ -142,7 +143,7 @@ export async function GET(request: Request) {
       `${origin}/confirm-email-connection`
     );
   } catch (err) {
-    console.error("Google OAuth callback error:", err);
+    logger.error("GET /api/auth/callback/google-email", err);
     return NextResponse.redirect(
       `${origin}${errorRedirect}${errorRedirect.includes("?") ? "&" : "?"}error=gmail_callback_failed`
     );

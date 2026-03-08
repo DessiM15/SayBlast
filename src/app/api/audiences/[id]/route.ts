@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod/v4";
 import { requireSession } from "@/lib/auth/session";
 import { db } from "@/lib/db";
+import { logger } from "@/lib/logger";
 
 export async function GET(
   request: NextRequest,
@@ -58,7 +59,7 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    console.error("Get audience error:", error);
+    logger.error("GET /api/audiences/[id]", error);
     return NextResponse.json(
       { error: "Failed to fetch audience list" },
       { status: 500 }
@@ -115,7 +116,7 @@ export async function PUT(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    console.error("Update audience error:", error);
+    logger.error("PUT /api/audiences/[id]", error);
     return NextResponse.json(
       { error: "Failed to update audience list" },
       { status: 500 }
@@ -164,7 +165,7 @@ export async function DELETE(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    console.error("Delete audience error:", error);
+    logger.error("DELETE /api/audiences/[id]", error);
     return NextResponse.json(
       { error: "Failed to delete audience list" },
       { status: 500 }

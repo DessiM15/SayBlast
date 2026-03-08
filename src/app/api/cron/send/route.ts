@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { sendCampaign } from "@/lib/email/campaign-sender";
 import { CampaignStatus } from "@/generated/prisma/enums";
+import { logger } from "@/lib/logger";
 
 export async function POST(request: NextRequest) {
   try {
@@ -11,7 +12,7 @@ export async function POST(request: NextRequest) {
     const expectedToken = process.env.CRON_SECRET;
 
     if (!expectedToken) {
-      console.error("CRON_SECRET environment variable is not set");
+      logger.error("cron/send", "CRON_SECRET environment variable is not set");
       return NextResponse.json(
         { error: "Server misconfiguration" },
         { status: 500 }
@@ -80,7 +81,7 @@ export async function POST(request: NextRequest) {
 
     // Log detailed errors server-side only — never expose in response
     if (result.errors.length > 0) {
-      console.error(`[cron] Campaign ${campaignId} errors:`, result.errors);
+      logger.error("cron/send", `Campaign ${campaignId}: ${result.errors.length} send errors`);
     }
 
     return NextResponse.json({
@@ -94,7 +95,7 @@ export async function POST(request: NextRequest) {
       remaining: result.remaining,
     });
   } catch (error) {
-    console.error("Cron send error:", error);
+    logger.error("cron/send", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

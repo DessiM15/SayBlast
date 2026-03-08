@@ -4,6 +4,7 @@ import { requireSession } from "@/lib/auth/session";
 import { db } from "@/lib/db";
 import { processTranscript } from "@/lib/ai/process-transcript";
 import { CampaignStatus, TranscriptType } from "@/generated/prisma/enums";
+import { logger } from "@/lib/logger";
 
 const requestSchema = z.object({
   transcript: z.string().min(1, "Transcript is required").max(10000, "Transcript is too long"),
@@ -57,7 +58,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    console.error("Voice processing error:", error);
+    logger.error("POST /api/voice/process", error);
     return NextResponse.json(
       { error: "Failed to process voice transcript" },
       { status: 500 }

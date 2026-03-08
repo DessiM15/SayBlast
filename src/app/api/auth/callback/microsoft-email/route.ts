@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { db } from "@/lib/db";
 import { EmailProvider } from "@/generated/prisma/enums";
 import { encrypt } from "@/lib/encryption";
+import { logger } from "@/lib/logger";
 
 interface OAuthState {
   returnTo: string;
@@ -89,7 +90,7 @@ export async function GET(request: Request) {
     );
 
     if (!tokenResponse.ok) {
-      console.error("Microsoft token exchange failed: status", tokenResponse.status);
+      logger.error("GET /api/auth/callback/microsoft-email", `Token exchange failed: status ${tokenResponse.status}`);
       return NextResponse.redirect(
         `${origin}${errorRedirect}${errorRedirect.includes("?") ? "&" : "?"}error=outlook_token_failed`
       );
@@ -103,7 +104,7 @@ export async function GET(request: Request) {
     };
 
     if (!tokenData.refresh_token) {
-      console.error("Microsoft did not return a refresh token");
+      logger.error("GET /api/auth/callback/microsoft-email", "Microsoft did not return a refresh token");
       return NextResponse.redirect(
         `${origin}${errorRedirect}${errorRedirect.includes("?") ? "&" : "?"}error=outlook_no_refresh_token`
       );
@@ -144,7 +145,7 @@ export async function GET(request: Request) {
       `${origin}/confirm-email-connection`
     );
   } catch (err) {
-    console.error("Microsoft OAuth callback error:", err);
+    logger.error("GET /api/auth/callback/microsoft-email", err);
     return NextResponse.redirect(
       `${origin}${errorRedirect}${errorRedirect.includes("?") ? "&" : "?"}error=outlook_callback_failed`
     );

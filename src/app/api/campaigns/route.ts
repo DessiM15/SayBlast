@@ -4,6 +4,7 @@ import { requireSession } from "@/lib/auth/session";
 import { db } from "@/lib/db";
 import { CampaignStatus } from "@/generated/prisma/enums";
 import { sanitizeHtml } from "@/lib/sanitize-html";
+import { logger } from "@/lib/logger";
 
 export async function GET(request: NextRequest) {
   try {
@@ -46,7 +47,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    console.error("List campaigns error:", error);
+    logger.error("GET /api/campaigns", error);
     return NextResponse.json(
       { error: "Failed to fetch campaigns" },
       { status: 500 }
@@ -93,7 +94,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    console.error("Create campaign error:", error);
+    logger.error("POST /api/campaigns", error);
     return NextResponse.json(
       { error: "Failed to create campaign" },
       { status: 500 }

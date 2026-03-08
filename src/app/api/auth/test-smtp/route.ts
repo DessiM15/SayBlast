@@ -3,6 +3,7 @@ import { z } from "zod/v4";
 import { createTransport } from "nodemailer";
 import { lookup } from "dns/promises";
 import { requireSession } from "@/lib/auth/session";
+import { logger } from "@/lib/logger";
 
 const TestSmtpSchema = z.object({
   host: z.string().min(1),
@@ -90,7 +91,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ success: true });
   } catch (err) {
-    console.error("[POST /api/auth/test-smtp]", err);
+    logger.error("POST /api/auth/test-smtp", err);
     return NextResponse.json(
       { error: "Failed to connect. Please check your SMTP settings." },
       { status: 400 }

@@ -3,6 +3,7 @@ import { z } from "zod/v4";
 import Papa from "papaparse";
 import { requireSession } from "@/lib/auth/session";
 import { db } from "@/lib/db";
+import { logger } from "@/lib/logger";
 
 const uploadSchema = z.object({
   audienceListId: z.string().min(1, "Audience list ID is required"),
@@ -140,7 +141,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    console.error("CSV upload error:", error);
+    logger.error("POST /api/contacts/upload", error);
     return NextResponse.json(
       { error: "Failed to upload contacts" },
       { status: 500 }

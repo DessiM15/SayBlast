@@ -4,6 +4,7 @@ import { requireSession } from "@/lib/auth/session";
 import { db } from "@/lib/db";
 import { refineCampaign } from "@/lib/ai/refine-campaign";
 import { TranscriptType } from "@/generated/prisma/enums";
+import { logger } from "@/lib/logger";
 
 const requestSchema = z.object({
   campaignId: z.string().min(1, "Campaign ID is required"),
@@ -72,7 +73,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    console.error("Voice refinement error:", error);
+    logger.error("POST /api/voice/refine", error);
     return NextResponse.json(
       { error: "Failed to refine campaign" },
       { status: 500 }

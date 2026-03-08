@@ -4,6 +4,7 @@ import { requireSession } from "@/lib/auth/session";
 import { db } from "@/lib/db";
 import { EmailProvider } from "@/generated/prisma/enums";
 import { encrypt } from "@/lib/encryption";
+import { logger } from "@/lib/logger";
 
 const ConnectSmtpSchema = z.object({
   host: z.string().min(1, "SMTP host is required"),
@@ -56,7 +57,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    console.error("[POST /api/auth/connect-smtp]", error);
+    logger.error("POST /api/auth/connect-smtp", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

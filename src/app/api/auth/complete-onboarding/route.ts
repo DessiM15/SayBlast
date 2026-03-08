@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireSession } from "@/lib/auth/session";
 import { db } from "@/lib/db";
+import { logger } from "@/lib/logger";
 
 export async function POST() {
   try {
@@ -37,7 +38,7 @@ export async function POST() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    console.error("[POST /api/auth/complete-onboarding]", error);
+    logger.error("POST /api/auth/complete-onboarding", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

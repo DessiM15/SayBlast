@@ -3,6 +3,7 @@ import { z } from "zod/v4";
 import { hash } from "bcryptjs";
 import { db } from "@/lib/db";
 import { createClient } from "@supabase/supabase-js";
+import { logger } from "@/lib/logger";
 
 const RegisterSchema = z.object({
   name: z.string().min(1, "Name is required").max(100),
@@ -70,11 +71,11 @@ export async function POST(req: Request) {
         });
       }
     } catch (confirmError) {
-      console.error("[POST /api/auth/register] Supabase confirm failed, rolling back DB user:", confirmError);
+      logger.error("POST /api/auth/register", "Supabase confirm failed, rolling back DB user");
       try {
         await db.user.delete({ where: { id: user.id } });
       } catch (rollbackError) {
-        console.error("[POST /api/auth/register] Rollback failed — orphaned user:", user.id, rollbackError);
+        logger.error("POST /api/auth/register", "Rollback failed — orphaned user");
       }
       return NextResponse.json(
         { error: "Registration failed. Please try again." },
@@ -84,7 +85,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ userId: user.id }, { status: 201 });
   } catch (err) {
-    console.error("[POST /api/auth/register]", err);
+    logger.error("POST /api/auth/register", err);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

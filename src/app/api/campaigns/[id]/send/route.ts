@@ -3,6 +3,7 @@ import { requireSession } from "@/lib/auth/session";
 import { db } from "@/lib/db";
 import { sendCampaign } from "@/lib/email/campaign-sender";
 import { CampaignStatus } from "@/generated/prisma/enums";
+import { logger } from "@/lib/logger";
 
 export async function POST(
   _request: NextRequest,
@@ -90,7 +91,7 @@ export async function POST(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    console.error("Manual send error:", error);
+    logger.error("POST /api/campaigns/send", error);
     return NextResponse.json(
       { error: "Failed to send campaign" },
       { status: 500 }

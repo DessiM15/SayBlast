@@ -3,6 +3,7 @@ import { requireSession } from "@/lib/auth/session";
 import { db } from "@/lib/db";
 import { EmailProvider } from "@/generated/prisma/enums";
 import { decrypt, encrypt } from "@/lib/encryption";
+import { logger } from "@/lib/logger";
 
 const MAX_PENDING_AGE_MS = 10 * 60 * 1000; // 10 minutes
 
@@ -78,7 +79,7 @@ export async function POST() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    console.error("Confirm email connection error:", error);
+    logger.error("POST /api/auth/confirm-email-connection", error);
     return NextResponse.json(
       { error: "Failed to confirm email connection" },
       { status: 500 }

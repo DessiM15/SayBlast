@@ -2,6 +2,7 @@ import type { User } from "@/generated/prisma/client";
 import { EmailProvider } from "@/generated/prisma/enums";
 import { db } from "@/lib/db";
 import { encrypt, decrypt } from "@/lib/encryption";
+import { logger } from "@/lib/logger";
 
 /**
  * Check if the user's OAuth token is expired and refresh it if needed.
@@ -44,7 +45,7 @@ async function refreshGmailToken(user: User): Promise<User> {
   });
 
   if (!response.ok) {
-    console.error("Gmail token refresh failed: status", response.status);
+    logger.error("Gmail token refresh", `Token refresh failed: status ${response.status}`);
     throw new Error("Failed to refresh Gmail token");
   }
 
@@ -85,7 +86,7 @@ async function refreshOutlookToken(user: User): Promise<User> {
   );
 
   if (!response.ok) {
-    console.error("Outlook token refresh failed: status", response.status);
+    logger.error("Outlook token refresh", `Token refresh failed: status ${response.status}`);
     throw new Error("Failed to refresh Outlook token");
   }
 

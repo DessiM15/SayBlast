@@ -5,6 +5,7 @@ import { requireSession } from "@/lib/auth/session";
 import { db } from "@/lib/db";
 import { createClient } from "@supabase/supabase-js";
 import { createClient as createServerClient } from "@/lib/supabase/server";
+import { logger } from "@/lib/logger";
 
 const changePasswordSchema = z.object({
   currentPassword: z.string().min(1, "Current password is required"),
@@ -71,7 +72,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    console.error("Change password error:", error);
+    logger.error("POST /api/auth/change-password", error);
     return NextResponse.json(
       { error: "Failed to change password" },
       { status: 500 }

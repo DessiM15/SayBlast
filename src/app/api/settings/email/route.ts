@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth/session";
 import { db } from "@/lib/db";
+import { logger } from "@/lib/logger";
 
 export async function GET() {
   const session = await getSession();
@@ -26,7 +27,7 @@ export async function GET() {
 
     return NextResponse.json(user);
   } catch (err) {
-    console.error("[GET /api/settings/email]", err);
+    logger.error("GET /api/settings/email", err);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
