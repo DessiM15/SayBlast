@@ -3,6 +3,7 @@ import type { User } from "@/generated/prisma/client";
 import { EmailProvider } from "@/generated/prisma/enums";
 import { decrypt } from "@/lib/encryption";
 import { refreshTokenIfNeeded } from "@/lib/email/token-refresh";
+import { env } from "@/lib/env";
 
 export async function createEmailTransport(user: User): Promise<Transporter> {
   switch (user.emailProvider) {
@@ -26,8 +27,8 @@ async function createGmailTransport(user: User): Promise<Transporter> {
     auth: {
       type: "OAuth2",
       user: freshUser.emailAddress!,
-      clientId: process.env.GOOGLE_CLIENT_ID,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      clientId: env.GOOGLE_CLIENT_ID,
+      clientSecret: env.GOOGLE_CLIENT_SECRET,
       refreshToken: decrypt(freshUser.emailRefreshToken!),
       accessToken: decrypt(freshUser.emailAccessToken!),
     },
@@ -47,8 +48,8 @@ async function createOutlookTransport(user: User): Promise<Transporter> {
     auth: {
       type: "OAuth2",
       user: freshUser.emailAddress!,
-      clientId: process.env.MICROSOFT_CLIENT_ID,
-      clientSecret: process.env.MICROSOFT_CLIENT_SECRET,
+      clientId: env.MICROSOFT_CLIENT_ID,
+      clientSecret: env.MICROSOFT_CLIENT_SECRET,
       refreshToken: decrypt(freshUser.emailRefreshToken!),
       accessToken: decrypt(freshUser.emailAccessToken!),
     },

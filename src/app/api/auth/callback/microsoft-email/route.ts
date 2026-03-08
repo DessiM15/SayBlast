@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { EmailProvider } from "@/generated/prisma/enums";
 import { encrypt } from "@/lib/encryption";
 import { logger } from "@/lib/logger";
+import { env } from "@/lib/env";
 
 interface OAuthState {
   returnTo: string;
@@ -80,8 +81,8 @@ export async function GET(request: Request) {
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
         body: new URLSearchParams({
           code,
-          client_id: process.env.MICROSOFT_CLIENT_ID!,
-          client_secret: process.env.MICROSOFT_CLIENT_SECRET!,
+          client_id: env.MICROSOFT_CLIENT_ID,
+          client_secret: env.MICROSOFT_CLIENT_SECRET,
           redirect_uri: `${origin}/api/auth/callback/microsoft-email`,
           grant_type: "authorization_code",
           scope: "https://outlook.office365.com/Mail.Send offline_access openid email",

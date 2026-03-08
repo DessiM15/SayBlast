@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { EmailProvider } from "@/generated/prisma/enums";
 import { encrypt } from "@/lib/encryption";
 import { logger } from "@/lib/logger";
+import { env } from "@/lib/env";
 
 interface OAuthState {
   returnTo: string;
@@ -78,8 +79,8 @@ export async function GET(request: Request) {
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: new URLSearchParams({
         code,
-        client_id: process.env.GOOGLE_CLIENT_ID!,
-        client_secret: process.env.GOOGLE_CLIENT_SECRET!,
+        client_id: env.GOOGLE_CLIENT_ID,
+        client_secret: env.GOOGLE_CLIENT_SECRET,
         redirect_uri: `${origin}/api/auth/callback/google-email`,
         grant_type: "authorization_code",
       }),

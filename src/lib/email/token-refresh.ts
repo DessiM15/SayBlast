@@ -3,6 +3,7 @@ import { EmailProvider } from "@/generated/prisma/enums";
 import { db } from "@/lib/db";
 import { encrypt, decrypt } from "@/lib/encryption";
 import { logger } from "@/lib/logger";
+import { env } from "@/lib/env";
 
 /**
  * Check if the user's OAuth token is expired and refresh it if needed.
@@ -37,8 +38,8 @@ async function refreshGmailToken(user: User): Promise<User> {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({
-      client_id: process.env.GOOGLE_CLIENT_ID!,
-      client_secret: process.env.GOOGLE_CLIENT_SECRET!,
+      client_id: env.GOOGLE_CLIENT_ID,
+      client_secret: env.GOOGLE_CLIENT_SECRET,
       refresh_token: decrypt(user.emailRefreshToken),
       grant_type: "refresh_token",
     }),
@@ -76,8 +77,8 @@ async function refreshOutlookToken(user: User): Promise<User> {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: new URLSearchParams({
-        client_id: process.env.MICROSOFT_CLIENT_ID!,
-        client_secret: process.env.MICROSOFT_CLIENT_SECRET!,
+        client_id: env.MICROSOFT_CLIENT_ID,
+        client_secret: env.MICROSOFT_CLIENT_SECRET,
         refresh_token: decrypt(user.emailRefreshToken),
         grant_type: "refresh_token",
         scope: "https://outlook.office365.com/Mail.Send offline_access",
