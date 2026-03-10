@@ -301,6 +301,7 @@ export default function CampaignDetailPage() {
 
       {/* Dialogs */}
       <SendConfirmDialog
+        campaignId={campaignId}
         campaign={campaign}
         open={showSendConfirm}
         onOpenChange={setShowSendConfirm}

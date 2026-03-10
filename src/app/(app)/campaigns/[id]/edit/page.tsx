@@ -241,6 +241,7 @@ export default function CampaignEditPage() {
       {/* Editor + Preview Layout */}
       <div className="grid gap-6 lg:grid-cols-2">
         <EditorPanel
+          campaignId={campaignId}
           campaign={campaign}
           onChange={handleChange}
           onRefineWithVoice={() => setIsRefineMode(true)}

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import dynamic from "next/dynamic";
 import {
   Card,
@@ -10,8 +11,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Clock, Mic, Loader2, Pencil } from "lucide-react";
+import { Clock, Loader2, Mic, Pencil, ShieldAlert } from "lucide-react";
 import { CampaignStatus } from "@/generated/prisma/enums";
+import { ANTI_SPAM_COOLDOWN_HOURS } from "@/lib/constants";
 
 const TiptapEditor = dynamic(
   () => import("@/components/campaigns/tiptap-editor"),
@@ -34,10 +36,17 @@ export interface CampaignEditorData {
 }
 
 interface EditorPanelProps {
+  campaignId: string;
   campaign: CampaignEditorData;
   onChange: (updates: Partial<CampaignEditorData>) => void;
   onRefineWithVoice: () => void;
   isRefining: boolean;
+}
+
+interface ScheduleCooldownState {
+  status: "idle" | "checking" | "warning" | "error";
+  inCooldown: number;
+  totalContacts: number;
 }
 
 function toDatetimeLocal(iso: string): string {
@@ -55,11 +64,65 @@ function getMinDatetime(): string {
 }
 
 export default function EditorPanel({
+  campaignId,
   campaign,
   onChange,
   onRefineWithVoice,
   isRefining,
 }: EditorPanelProps) {
+  const [cooldownState, setCooldownState] = useState<ScheduleCooldownState>({
+    status: "idle",
+    inCooldown: 0,
+    totalContacts: 0,
+  });
+
+  async function handleScheduleClick() {
+    if (!campaign.audienceListId) {
+      // No audience — just schedule, backend will validate at send time
+      onChange({ scheduledAt: campaign.scheduledAt, status: CampaignStatus.scheduled });
+      return;
+    }
+
+    setCooldownState({ status: "checking", inCooldown: 0, totalContacts: 0 });
+
+    try {
+      const res = await fetch(`/api/campaigns/${campaignId}/cooldown-preview`);
+      if (!res.ok) throw new Error("Preview failed");
+
+      const data = (await res.json()) as {
+        totalContacts: number;
+        inCooldown: number;
+        available: number;
+      };
+
+      if (data.inCooldown > 0) {
+        setCooldownState({
+          status: "warning",
+          inCooldown: data.inCooldown,
+          totalContacts: data.totalContacts,
+        });
+        return;
+      }
+
+      // No cooldown issues — proceed directly
+      setCooldownState({ status: "idle", inCooldown: 0, totalContacts: 0 });
+      onChange({ scheduledAt: campaign.scheduledAt, status: CampaignStatus.scheduled });
+    } catch {
+      // Preview failed — don't block scheduling
+      setCooldownState({ status: "idle", inCooldown: 0, totalContacts: 0 });
+      onChange({ scheduledAt: campaign.scheduledAt, status: CampaignStatus.scheduled });
+    }
+  }
+
+  function handleScheduleAnyway() {
+    setCooldownState({ status: "idle", inCooldown: 0, totalContacts: 0 });
+    onChange({ scheduledAt: campaign.scheduledAt, status: CampaignStatus.scheduled });
+  }
+
+  function handleCancelSchedule() {
+    setCooldownState({ status: "idle", inCooldown: 0, totalContacts: 0 });
+  }
+
   return (
     <div className="flex flex-col gap-4">
       <Card>
@@ -185,25 +248,62 @@ export default function EditorPanel({
                   onChange({
                     scheduledAt: value ? new Date(value).toISOString() : null,
                   });
+                  // Reset cooldown state when date changes
+                  if (cooldownState.status === "warning") {
+                    setCooldownState({ status: "idle", inCooldown: 0, totalContacts: 0 });
+                  }
                 }}
                 className="w-full rounded-md border bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               />
             </div>
-            <Button
-              disabled={
-                !campaign.scheduledAt ||
-                new Date(campaign.scheduledAt) <= new Date()
-              }
-              onClick={() =>
-                onChange({
-                  scheduledAt: campaign.scheduledAt,
-                  status: CampaignStatus.scheduled,
-                })
-              }
-              className="bg-gradient-to-r from-[#F6D365] to-[#FDA085] text-foreground hover:opacity-90"
-            >
-              Schedule Campaign
-            </Button>
+
+            {cooldownState.status === "checking" ? (
+              <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/50 p-3 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
+                Checking recipient availability...
+              </div>
+            ) : cooldownState.status === "warning" ? (
+              <div className="flex flex-col gap-3">
+                <div className="flex items-start gap-3 rounded-lg border border-yellow-200 bg-yellow-50 p-3 dark:border-yellow-800 dark:bg-yellow-950">
+                  <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-yellow-600 dark:text-yellow-400" />
+                  <div className="text-sm">
+                    <p className="font-medium text-yellow-800 dark:text-yellow-200">
+                      {cooldownState.inCooldown} of {cooldownState.totalContacts} recipients are currently in the {ANTI_SPAM_COOLDOWN_HOURS}-hour cooldown
+                    </p>
+                    <p className="mt-0.5 text-yellow-700 dark:text-yellow-300">
+                      As of now, these recipients would be skipped. This may change by the scheduled send time.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleCancelSchedule}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={handleScheduleAnyway}
+                    className="bg-gradient-to-r from-[#F6D365] to-[#FDA085] text-foreground hover:opacity-90"
+                  >
+                    Schedule Anyway
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <Button
+                disabled={
+                  !campaign.scheduledAt ||
+                  new Date(campaign.scheduledAt) <= new Date()
+                }
+                onClick={handleScheduleClick}
+                className="bg-gradient-to-r from-[#F6D365] to-[#FDA085] text-foreground hover:opacity-90"
+              >
+                Schedule Campaign
+              </Button>
+            )}
           </div>
         </Card>
       )}
