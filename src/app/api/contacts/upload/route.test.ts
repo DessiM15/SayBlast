@@ -107,4 +107,80 @@ describe("POST /api/contacts/upload", () => {
 
     expect(res.status).toBe(404);
   });
+
+  it("rejects emails without a valid domain", async () => {
+    mockDb.audienceList.findFirst.mockResolvedValue({ id: "list-1", userId: "user-1" });
+    mockDb.contact.create.mockResolvedValue({});
+
+    const csv = "email,firstName\nuser@,Alice\n@@@,Bob\nuser@.com,Carol\ngood@example.com,Dave";
+    const res = await POST(makeRequest({ audienceListId: "list-1", csvText: csv }) as never);
+    const json = await res.json();
+
+    expect(res.status).toBe(201);
+    expect(json.added).toBe(1); // only good@example.com
+    expect(json.invalid).toBe(3);
+    expect(json.invalidRows).toEqual([2, 3, 4]);
+  });
+
+  it("accepts plus-addressed emails", async () => {
+    mockDb.audienceList.findFirst.mockResolvedValue({ id: "list-1", userId: "user-1" });
+    mockDb.contact.create.mockResolvedValue({});
+
+    const csv = "email\nuser+tag@gmail.com";
+    const res = await POST(makeRequest({ audienceListId: "list-1", csvText: csv }) as never);
+    const json = await res.json();
+
+    expect(json.added).toBe(1);
+    expect(json.invalid).toBe(0);
+  });
+
+  it("rejects emails with spaces", async () => {
+    mockDb.audienceList.findFirst.mockResolvedValue({ id: "list-1", userId: "user-1" });
+
+    const csv = "email\nuser @example.com";
+    const res = await POST(makeRequest({ audienceListId: "list-1", csvText: csv }) as never);
+    const json = await res.json();
+
+    expect(json.invalid).toBe(1);
+  });
+
+  it("strips CSV injection characters from name fields", async () => {
+    mockDb.audienceList.findFirst.mockResolvedValue({ id: "list-1", userId: "user-1" });
+    mockDb.contact.create.mockResolvedValue({});
+
+    const csv = "email,firstName,lastName\nalice@example.com,=SUM(A1),+cmd";
+    const res = await POST(makeRequest({ audienceListId: "list-1", csvText: csv }) as never);
+    const json = await res.json();
+
+    expect(json.added).toBe(1);
+    const createCall = mockDb.contact.create.mock.calls[0][0];
+    expect(createCall.data.firstName).toBe("SUM(A1)");
+    expect(createCall.data.lastName).toBe("cmd");
+  });
+
+  it("does not strip CSV injection characters from email field", async () => {
+    mockDb.audienceList.findFirst.mockResolvedValue({ id: "list-1", userId: "user-1" });
+    mockDb.contact.create.mockResolvedValue({});
+
+    const csv = "email\n+tag@example.com";
+    const res = await POST(makeRequest({ audienceListId: "list-1", csvText: csv }) as never);
+    const json = await res.json();
+
+    expect(json.added).toBe(1);
+    const createCall = mockDb.contact.create.mock.calls[0][0];
+    expect(createCall.data.email).toBe("+tag@example.com");
+  });
+
+  it("returns invalid row numbers in response", async () => {
+    mockDb.audienceList.findFirst.mockResolvedValue({ id: "list-1", userId: "user-1" });
+    mockDb.contact.create.mockResolvedValue({});
+
+    const csv = "email\ngood@test.com\nbad-email\ngood2@test.com\nalso-bad";
+    const res = await POST(makeRequest({ audienceListId: "list-1", csvText: csv }) as never);
+    const json = await res.json();
+
+    expect(json.added).toBe(2);
+    expect(json.invalid).toBe(2);
+    expect(json.invalidRows).toEqual([3, 5]);
+  });
 });

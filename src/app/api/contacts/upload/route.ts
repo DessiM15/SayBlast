@@ -4,6 +4,7 @@ import Papa from "papaparse";
 import { requireSession } from "@/lib/auth/session";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
+import { isValidEmail, sanitizeCsvField } from "@/lib/validation/contact-sanitize";
 
 const uploadSchema = z.object({
   audienceListId: z.string().min(1, "Audience list ID is required"),
@@ -28,27 +29,30 @@ function extractEmail(row: CsvRow): string | null {
   const raw = row.email ?? row.Email ?? row.EMAIL;
   if (!raw || typeof raw !== "string") return null;
   const trimmed = raw.trim().toLowerCase();
-  return trimmed.includes("@") ? trimmed : null;
+  if (!isValidEmail(trimmed)) return null;
+  return trimmed;
 }
 
 function extractFirstName(row: CsvRow): string {
-  return (
+  const raw = (
     row.firstName ??
     row.first_name ??
     row.FirstName ??
     row["First Name"] ??
     ""
   ).trim();
+  return sanitizeCsvField(raw);
 }
 
 function extractLastName(row: CsvRow): string {
-  return (
+  const raw = (
     row.lastName ??
     row.last_name ??
     row.LastName ??
     row["Last Name"] ??
     ""
   ).trim();
+  return sanitizeCsvField(raw);
 }
 
 export async function POST(request: NextRequest) {
@@ -94,11 +98,14 @@ export async function POST(request: NextRequest) {
     let added = 0;
     let skipped = 0;
     let invalid = 0;
+    const invalidRows: number[] = [];
 
-    for (const row of result.data) {
+    for (let i = 0; i < result.data.length; i++) {
+      const row = result.data[i];
       const email = extractEmail(row);
       if (!email) {
         invalid++;
+        invalidRows.push(i + 2); // +2: 1-indexed + header row
         continue;
       }
 
@@ -132,6 +139,7 @@ export async function POST(request: NextRequest) {
         added,
         skipped,
         invalid,
+        invalidRows: invalidRows.slice(0, 50),
         total: result.data.length,
       },
       { status: 201 }

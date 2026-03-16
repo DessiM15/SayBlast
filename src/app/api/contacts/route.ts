@@ -3,6 +3,7 @@ import { z } from "zod/v4";
 import { requireSession } from "@/lib/auth/session";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
+import { sanitizeCsvField } from "@/lib/validation/contact-sanitize";
 
 const addContactSchema = z.object({
   audienceListId: z.string().min(1, "Audience list ID is required"),
@@ -52,8 +53,8 @@ export async function POST(request: NextRequest) {
           data: {
             audienceListId,
             email: contact.email.toLowerCase(),
-            firstName: contact.firstName,
-            lastName: contact.lastName,
+            firstName: contact.firstName ? sanitizeCsvField(contact.firstName) : contact.firstName,
+            lastName: contact.lastName ? sanitizeCsvField(contact.lastName) : contact.lastName,
           },
         });
         added++;
@@ -133,8 +134,8 @@ export async function PATCH(request: NextRequest) {
 
     const data: { email?: string; firstName?: string; lastName?: string } = {};
     if (email !== undefined) data.email = email.toLowerCase();
-    if (firstName !== undefined) data.firstName = firstName;
-    if (lastName !== undefined) data.lastName = lastName;
+    if (firstName !== undefined) data.firstName = sanitizeCsvField(firstName);
+    if (lastName !== undefined) data.lastName = sanitizeCsvField(lastName);
 
     try {
       const updated = await db.contact.update({
