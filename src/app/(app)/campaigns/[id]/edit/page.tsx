@@ -103,13 +103,14 @@ export default function CampaignEditPage() {
           body: JSON.stringify(updates),
         });
         if (!response.ok) {
-          throw new Error("Save failed");
+          const data = (await response.json().catch(() => ({}))) as { error?: string };
+          throw new Error(data.error ?? "Failed to save changes");
         }
         setSaveStatus("saved");
         setTimeout(() => setSaveStatus("idle"), 2000);
-      } catch {
+      } catch (err) {
         setSaveStatus("idle");
-        toast.error("Failed to save changes");
+        toast.error(err instanceof Error ? err.message : "Failed to save changes");
       }
     },
     [campaignId]
