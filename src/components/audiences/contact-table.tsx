@@ -19,13 +19,16 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { AlertTriangle, ChevronLeft, ChevronRight, Loader2, Pencil, Trash2, Users } from "lucide-react";
+import { AlertTriangle, ChevronLeft, ChevronRight, Loader2, Pencil, RotateCcw, Trash2, Users } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 export interface ContactItem {
   id: string;
   email: string;
   firstName: string | null;
   lastName: string | null;
+  bounceCount: number;
+  bouncedAt: string | null;
   createdAt: string;
 }
 
@@ -40,6 +43,7 @@ interface ContactTableProps {
   contacts: ContactItem[];
   onDelete: (contactId: string) => void;
   onEdit: (contactId: string, data: { email?: string; firstName?: string; lastName?: string }) => Promise<void>;
+  onUnbounce?: (contactId: string) => void;
   isDeleting: string | null;
   pagination: PaginationData;
   onPageChange: (page: number) => void;
@@ -50,6 +54,7 @@ export default function ContactTable({
   contacts,
   onDelete,
   onEdit,
+  onUnbounce,
   isDeleting,
   pagination,
   onPageChange,
@@ -99,7 +104,21 @@ export default function ContactTable({
         <tbody>
           {contacts.map((contact) => (
             <tr key={contact.id} className="border-b last:border-0">
-              <td className="py-2.5 pr-4 font-medium">{contact.email}</td>
+              <td className="py-2.5 pr-4 font-medium">
+                <div className="flex items-center gap-2">
+                  {contact.email}
+                  {contact.bounceCount >= 2 && (
+                    <Badge variant="destructive" className="text-[10px] px-1.5 py-0">
+                      Bounced
+                    </Badge>
+                  )}
+                  {contact.bounceCount === 1 && (
+                    <Badge variant="secondary" className="text-[10px] px-1.5 py-0 text-yellow-700 dark:text-yellow-300">
+                      1 bounce
+                    </Badge>
+                  )}
+                </div>
+              </td>
               <td className="py-2.5 pr-4 text-muted-foreground">
                 {contact.firstName || "—"}
               </td>
@@ -111,6 +130,17 @@ export default function ContactTable({
               </td>
               <td className="py-2.5">
                 <div className="flex items-center gap-1">
+                  {contact.bounceCount >= 2 && onUnbounce && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 w-7 p-0 text-muted-foreground hover:text-green-600"
+                      title="Clear bounce status"
+                      onClick={() => onUnbounce(contact.id)}
+                    >
+                      <RotateCcw className="h-3.5 w-3.5" />
+                    </Button>
+                  )}
                   <Button
                     variant="ghost"
                     size="sm"

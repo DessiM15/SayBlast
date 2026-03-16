@@ -4,10 +4,11 @@ import { sendCampaign } from "./campaign-sender";
 import { CampaignStatus } from "@/generated/prisma/enums";
 
 // Use vi.hoisted to avoid hoisting issues with vi.mock factories
-const { mockSendMail, mockCheckCooldown, mockGenerateUnsubscribeUrl } = vi.hoisted(() => ({
+const { mockSendMail, mockCheckCooldown, mockGenerateUnsubscribeUrl, mockRecordHardBounce } = vi.hoisted(() => ({
   mockSendMail: vi.fn(),
   mockCheckCooldown: vi.fn(),
   mockGenerateUnsubscribeUrl: vi.fn(),
+  mockRecordHardBounce: vi.fn(),
 }));
 
 vi.mock("@/lib/email/transport-factory", () => ({
@@ -29,6 +30,12 @@ vi.mock("@/lib/email/compliance-footer", () => ({
   injectComplianceFooterText: (text: string) => text + "\n-- footer",
 }));
 
+vi.mock("@/lib/email/bounce", () => ({
+  classifyBounce: (msg: string) => (msg.includes("550") || msg.includes("user unknown") ? "hard" : "soft"),
+  recordHardBounce: (...args: unknown[]) => mockRecordHardBounce(...args),
+  isHardBounced: (count: number) => count >= 2,
+}));
+
 function makeCampaign(overrides: Record<string, unknown> = {}) {
   return {
     id: "campaign-1",
@@ -40,8 +47,8 @@ function makeCampaign(overrides: Record<string, unknown> = {}) {
     user: { ...baseUser },
     audienceList: {
       contacts: [
-        { id: "c1", email: "alice@example.com" },
-        { id: "c2", email: "bob@example.com" },
+        { id: "c1", email: "alice@example.com", bounceCount: 0 },
+        { id: "c2", email: "bob@example.com", bounceCount: 0 },
       ],
     },
     ...overrides,
@@ -61,6 +68,7 @@ describe("sendCampaign", () => {
     vi.useFakeTimers();
     mockCheckCooldown.mockResolvedValue({ allowed: true });
     mockGenerateUnsubscribeUrl.mockResolvedValue("https://app.test/unsubscribe?token=abc123");
+    mockRecordHardBounce.mockResolvedValue(undefined);
     setupResumeMocks();
   });
 
@@ -237,5 +245,65 @@ describe("sendCampaign", () => {
     expect(result.sent).toBe(1);
     expect(mockSendMail).toHaveBeenCalledTimes(1);
     expect(result.remaining).toBe(0);
+  });
+
+  it("skips hard-bounced contacts", async () => {
+    mockDb.campaign.findUnique.mockResolvedValue(
+      makeCampaign({
+        audienceList: {
+          contacts: [
+            { id: "c1", email: "alice@example.com", bounceCount: 2 },
+            { id: "c2", email: "bob@example.com", bounceCount: 0 },
+          ],
+        },
+      })
+    );
+    mockSendMail.mockResolvedValue({});
+    mockDb.sendLog.create.mockResolvedValue({});
+    mockDb.contact.update.mockResolvedValue({});
+    mockDb.sendLog.count.mockResolvedValueOnce(1).mockResolvedValueOnce(0);
+    mockDb.campaign.update.mockResolvedValue({});
+
+    const resultPromise = sendCampaign("campaign-1");
+    await vi.advanceTimersByTimeAsync(2000);
+    const result = await resultPromise;
+
+    expect(result.skipped).toBe(1); // alice skipped (bounced)
+    expect(result.sent).toBe(1); // bob sent
+    expect(mockSendMail).toHaveBeenCalledTimes(1);
+  });
+
+  it("records hard bounce on permanent failure", async () => {
+    mockDb.campaign.findUnique.mockResolvedValue(makeCampaign());
+    mockSendMail
+      .mockRejectedValueOnce(new Error("550 user unknown"))
+      .mockResolvedValueOnce({});
+    mockDb.sendLog.create.mockResolvedValue({});
+    mockDb.contact.update.mockResolvedValue({});
+    mockDb.sendLog.count.mockResolvedValueOnce(1).mockResolvedValueOnce(1);
+    mockDb.campaign.update.mockResolvedValue({});
+
+    const resultPromise = sendCampaign("campaign-1");
+    await vi.advanceTimersByTimeAsync(2000);
+    await resultPromise;
+
+    expect(mockRecordHardBounce).toHaveBeenCalledWith("c1");
+  });
+
+  it("does not record bounce on soft failure", async () => {
+    mockDb.campaign.findUnique.mockResolvedValue(makeCampaign());
+    mockSendMail
+      .mockRejectedValueOnce(new Error("421 try again later"))
+      .mockResolvedValueOnce({});
+    mockDb.sendLog.create.mockResolvedValue({});
+    mockDb.contact.update.mockResolvedValue({});
+    mockDb.sendLog.count.mockResolvedValueOnce(1).mockResolvedValueOnce(1);
+    mockDb.campaign.update.mockResolvedValue({});
+
+    const resultPromise = sendCampaign("campaign-1");
+    await vi.advanceTimersByTimeAsync(2000);
+    await resultPromise;
+
+    expect(mockRecordHardBounce).not.toHaveBeenCalled();
   });
 });

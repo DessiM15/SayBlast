@@ -138,6 +138,23 @@ export default function AudienceDetailPage() {
     }
   }
 
+  async function handleUnbounce(contactId: string) {
+    try {
+      const response = await fetch("/api/contacts/unbounce", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ contactId }),
+      });
+
+      if (!response.ok) throw new Error("Failed to clear bounce");
+
+      toast.success("Bounce status cleared");
+      loadAudienceList();
+    } catch {
+      toast.error("Failed to clear bounce status");
+    }
+  }
+
   async function handleDeleteContact(contactId: string) {
     setDeletingContactId(contactId);
     try {
@@ -350,6 +367,7 @@ export default function AudienceDetailPage() {
             contacts={contacts}
             onDelete={handleDeleteContact}
             onEdit={handleEditContact}
+            onUnbounce={handleUnbounce}
             isDeleting={deletingContactId}
             pagination={pagination}
             onPageChange={handlePageChange}

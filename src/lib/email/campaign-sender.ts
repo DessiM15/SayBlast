@@ -6,6 +6,7 @@ import {
   injectComplianceFooter,
   injectComplianceFooterText,
 } from "@/lib/email/compliance-footer";
+import { classifyBounce, recordHardBounce, isHardBounced } from "@/lib/email/bounce";
 import { CampaignStatus, SendLogStatus } from "@/generated/prisma/enums";
 
 export interface SendResult {
@@ -65,6 +66,11 @@ export async function sendCampaign(campaignId: string): Promise<SendResult> {
         include: {
           contacts: {
             where: { deletedAt: null },
+            select: {
+              id: true,
+              email: true,
+              bounceCount: true,
+            },
           },
         },
       },
@@ -149,6 +155,20 @@ export async function sendCampaign(campaignId: string): Promise<SendResult> {
   for (let i = 0; i < batch.length; i++) {
     const contact = batch[i];
 
+    // Check if contact is hard-bounced (2+ bounces)
+    if (isHardBounced(contact.bounceCount)) {
+      await db.sendLog.create({
+        data: {
+          campaignId,
+          contactEmail: contact.email,
+          status: SendLogStatus.skipped_cooldown,
+          error: `Hard bounced (${contact.bounceCount} bounces)`,
+        },
+      });
+      result.skipped++;
+      continue;
+    }
+
     // Check anti-spam cooldown
     const cooldown = await checkCooldown(contact.email, campaign.userId);
 
@@ -222,6 +242,13 @@ export async function sendCampaign(campaignId: string): Promise<SendResult> {
           error: message,
         },
       });
+
+      // Record hard bounce to protect sender reputation
+      const bounceType = classifyBounce(message);
+      if (bounceType === "hard") {
+        await recordHardBounce(contact.id);
+      }
+
       result.failed++;
       result.errors.push(`${contact.email}: ${message}`);
     }
