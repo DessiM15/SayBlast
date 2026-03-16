@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Clock, Loader2, Mic, Pencil, ShieldAlert } from "lucide-react";
 import { CampaignStatus } from "@/generated/prisma/enums";
 import { ANTI_SPAM_COOLDOWN_HOURS } from "@/lib/constants";
+import ScheduleConfirmDialog from "@/components/campaigns/schedule-confirm-dialog";
 
 const TiptapEditor = dynamic(
   () => import("@/components/campaigns/tiptap-editor"),
@@ -41,6 +42,9 @@ interface EditorPanelProps {
   onChange: (updates: Partial<CampaignEditorData>) => void;
   onRefineWithVoice: () => void;
   isRefining: boolean;
+  audienceListName: string | null;
+  audienceContactCount: number | null;
+  sendingEmail: string | null;
 }
 
 interface ScheduleCooldownState {
@@ -69,6 +73,9 @@ export default function EditorPanel({
   onChange,
   onRefineWithVoice,
   isRefining,
+  audienceListName,
+  audienceContactCount,
+  sendingEmail,
 }: EditorPanelProps) {
   const [cooldownState, setCooldownState] = useState<ScheduleCooldownState>({
     status: "idle",
@@ -76,6 +83,7 @@ export default function EditorPanel({
     totalContacts: 0,
   });
   const [hasPostalAddress, setHasPostalAddress] = useState<boolean | null>(null);
+  const [showScheduleConfirm, setShowScheduleConfirm] = useState(false);
 
   useEffect(() => {
     fetch("/api/settings/postal-address")
@@ -95,8 +103,8 @@ export default function EditorPanel({
     }
 
     if (!campaign.audienceListId) {
-      // No audience — just schedule, backend will validate at send time
-      onChange({ scheduledAt: campaign.scheduledAt, status: CampaignStatus.scheduled });
+      // No audience — open confirmation dialog
+      setShowScheduleConfirm(true);
       return;
     }
 
@@ -121,23 +129,28 @@ export default function EditorPanel({
         return;
       }
 
-      // No cooldown issues — proceed directly
+      // No cooldown issues — open confirmation dialog
       setCooldownState({ status: "idle", inCooldown: 0, totalContacts: 0 });
-      onChange({ scheduledAt: campaign.scheduledAt, status: CampaignStatus.scheduled });
+      setShowScheduleConfirm(true);
     } catch {
       // Preview failed — don't block scheduling
       setCooldownState({ status: "idle", inCooldown: 0, totalContacts: 0 });
-      onChange({ scheduledAt: campaign.scheduledAt, status: CampaignStatus.scheduled });
+      setShowScheduleConfirm(true);
     }
   }
 
   function handleScheduleAnyway() {
     setCooldownState({ status: "idle", inCooldown: 0, totalContacts: 0 });
-    onChange({ scheduledAt: campaign.scheduledAt, status: CampaignStatus.scheduled });
+    setShowScheduleConfirm(true);
   }
 
   function handleCancelSchedule() {
     setCooldownState({ status: "idle", inCooldown: 0, totalContacts: 0 });
+  }
+
+  function handleScheduleConfirmed() {
+    setShowScheduleConfirm(false);
+    onChange({ scheduledAt: campaign.scheduledAt, status: CampaignStatus.scheduled });
   }
 
   return (
@@ -361,6 +374,20 @@ export default function EditorPanel({
           </>
         )}
       </Button>
+
+      <ScheduleConfirmDialog
+        campaign={{
+          name: campaign.name,
+          subjectLine: campaign.subjectLine,
+          scheduledAt: campaign.scheduledAt ?? "",
+          audienceListName,
+          audienceContactCount,
+          sendingEmail,
+        }}
+        open={showScheduleConfirm}
+        onOpenChange={setShowScheduleConfirm}
+        onConfirm={handleScheduleConfirmed}
+      />
     </div>
   );
 }

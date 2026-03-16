@@ -28,6 +28,10 @@ interface CampaignApiResponse {
     textBody: string | null;
     audienceListId: string | null;
     scheduledAt: string | null;
+    audienceList: {
+      id: string;
+      name: string;
+    } | null;
   };
 }
 
@@ -58,6 +62,13 @@ export default function CampaignEditPage() {
   // Voice refinement state
   const [isRefineMode, setIsRefineMode] = useState(false);
 
+  // Schedule dialog data
+  const [audienceInfo, setAudienceInfo] = useState<{
+    name: string | null;
+    contactCount: number | null;
+  }>({ name: null, contactCount: null });
+  const [sendingEmail, setSendingEmail] = useState<string | null>(null);
+
   // Load campaign
   useEffect(() => {
     async function loadCampaign() {
@@ -82,6 +93,10 @@ export default function CampaignEditPage() {
           audienceListId: data.campaign.audienceListId,
           scheduledAt: data.campaign.scheduledAt,
         });
+        setAudienceInfo({
+          name: data.campaign.audienceList?.name ?? null,
+          contactCount: null,
+        });
         setPageStatus("ready");
       } catch {
         setErrorMessage("Failed to load campaign");
@@ -91,6 +106,36 @@ export default function CampaignEditPage() {
 
     loadCampaign();
   }, [campaignId]);
+
+  // Load sending email for schedule dialog
+  useEffect(() => {
+    fetch("/api/settings/email")
+      .then(async (res) => {
+        if (!res.ok) return;
+        const data = (await res.json()) as { emailAddress?: string };
+        setSendingEmail(data.emailAddress ?? null);
+      })
+      .catch(() => {});
+  }, []);
+
+  // Load audience contact count for schedule dialog
+  useEffect(() => {
+    if (!campaign.audienceListId || pageStatus !== "ready") return;
+
+    fetch(`/api/audiences/${campaign.audienceListId}`)
+      .then(async (res) => {
+        if (!res.ok) return;
+        const data = (await res.json()) as {
+          audienceList: { name: string };
+          pagination: { totalContacts: number };
+        };
+        setAudienceInfo({
+          name: data.audienceList.name,
+          contactCount: data.pagination.totalContacts,
+        });
+      })
+      .catch(() => {});
+  }, [campaign.audienceListId, pageStatus]);
 
   // Auto-save with debounce
   const saveCampaign = useCallback(
@@ -247,6 +292,9 @@ export default function CampaignEditPage() {
           onChange={handleChange}
           onRefineWithVoice={() => setIsRefineMode(true)}
           isRefining={isRefineMode}
+          audienceListName={audienceInfo.name}
+          audienceContactCount={audienceInfo.contactCount}
+          sendingEmail={sendingEmail}
         />
         <EmailPreview
           html={campaign.htmlBody}
