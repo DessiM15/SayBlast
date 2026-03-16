@@ -2,6 +2,12 @@ import { mockDb } from "@/test/mocks/db";
 import { baseUser, outlookUser } from "@/test/fixtures/users";
 import { refreshTokenIfNeeded } from "./token-refresh";
 
+// Mock encryption module — test fixtures use plain strings, not encrypted format
+vi.mock("@/lib/encryption", () => ({
+  encrypt: (val: string) => `encrypted:${val}`,
+  decrypt: (val: string) => val.replace(/^encrypted:/, ""),
+}));
+
 // Mock global fetch
 const mockFetch = vi.fn();
 vi.stubGlobal("fetch", mockFetch);
