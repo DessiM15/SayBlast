@@ -73,6 +73,19 @@ export async function POST(
       );
     }
 
+    // Check CAN-SPAM compliance: postal address required
+    const user = await db.user.findUnique({
+      where: { id: session.id },
+      select: { postalAddress: true },
+    });
+
+    if (!user?.postalAddress) {
+      return NextResponse.json(
+        { error: "Physical mailing address is required before sending. Go to Settings to add it." },
+        { status: 400 }
+      );
+    }
+
     // Set campaign to "sending" status
     await db.campaign.update({
       where: { id },

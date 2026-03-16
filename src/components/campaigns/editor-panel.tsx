@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import {
   Card,
@@ -75,8 +75,25 @@ export default function EditorPanel({
     inCooldown: 0,
     totalContacts: 0,
   });
+  const [hasPostalAddress, setHasPostalAddress] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    fetch("/api/settings/postal-address")
+      .then(async (res) => {
+        if (!res.ok) return;
+        const data = (await res.json()) as { postalAddress: string };
+        setHasPostalAddress(Boolean(data.postalAddress));
+      })
+      .catch(() => {
+        // Don't block — server will enforce
+      });
+  }, []);
 
   async function handleScheduleClick() {
+    if (hasPostalAddress === false) {
+      return;
+    }
+
     if (!campaign.audienceListId) {
       // No audience — just schedule, backend will validate at send time
       onChange({ scheduledAt: campaign.scheduledAt, status: CampaignStatus.scheduled });
@@ -257,6 +274,23 @@ export default function EditorPanel({
               />
             </div>
 
+            {hasPostalAddress === false && (
+              <div className="flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 p-3 dark:border-red-800 dark:bg-red-950">
+                <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-red-600 dark:text-red-400" />
+                <div className="text-sm">
+                  <p className="font-medium text-red-800 dark:text-red-200">
+                    Physical mailing address required
+                  </p>
+                  <p className="mt-0.5 text-red-700 dark:text-red-300">
+                    CAN-SPAM law requires a postal address on every email.{" "}
+                    <a href="/settings" className="underline font-medium">
+                      Add it in Settings
+                    </a>
+                  </p>
+                </div>
+              </div>
+            )}
+
             {cooldownState.status === "checking" ? (
               <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/50 p-3 text-sm text-muted-foreground">
                 <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
@@ -296,7 +330,8 @@ export default function EditorPanel({
               <Button
                 disabled={
                   !campaign.scheduledAt ||
-                  new Date(campaign.scheduledAt) <= new Date()
+                  new Date(campaign.scheduledAt) <= new Date() ||
+                  hasPostalAddress === false
                 }
                 onClick={handleScheduleClick}
                 className="bg-gradient-to-r from-[#F6D365] to-[#FDA085] text-foreground hover:opacity-90"

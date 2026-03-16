@@ -151,6 +151,19 @@ export async function PUT(
             { status: 400 }
           );
         }
+
+        // Check CAN-SPAM compliance: postal address required before scheduling
+        const user = await db.user.findUnique({
+          where: { id: session.id },
+          select: { postalAddress: true },
+        });
+
+        if (!user?.postalAddress) {
+          return NextResponse.json(
+            { error: "Physical mailing address is required before scheduling. Go to Settings to add it." },
+            { status: 400 }
+          );
+        }
       }
     }
 
