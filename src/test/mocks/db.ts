@@ -19,6 +19,7 @@ export const mockDb = {
   },
   audienceList: {
     findFirst: vi.fn(),
+    findMany: vi.fn(),
   },
   sendLog: {
     findFirst: vi.fn(),
@@ -26,6 +27,10 @@ export const mockDb = {
     create: vi.fn(),
     createMany: vi.fn(),
     count: vi.fn(),
+  },
+  unsubscribe: {
+    findUnique: vi.fn(),
+    create: vi.fn(),
   },
 };
 

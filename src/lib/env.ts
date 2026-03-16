@@ -44,4 +44,7 @@ export const env = {
 
   // Cron — required for scheduled sending
   get CRON_SECRET() { return requiredEnv("CRON_SECRET"); },
+
+  // App URL — required for unsubscribe links
+  get NEXT_PUBLIC_APP_URL() { return requiredEnv("NEXT_PUBLIC_APP_URL"); },
 } as const;

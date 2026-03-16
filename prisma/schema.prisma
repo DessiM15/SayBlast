@@ -62,10 +62,14 @@ model User {
   emailVerified      Boolean @default(false)
   onboardingComplete Boolean @default(false)
 
+  // CAN-SPAM compliance
+  postalAddress String? // Physical mailing address required by CAN-SPAM
+
   // Relations
-  campaigns     Campaign[]
-  audienceLists AudienceList[]
-  templates     CampaignTemplate[]
+  campaigns      Campaign[]
+  audienceLists  AudienceList[]
+  templates      CampaignTemplate[]
+  unsubscribes   Unsubscribe[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -159,4 +163,17 @@ model SendLog {
   sentAt       DateTime @default(now())
 
   @@index([contactEmail, status, sentAt])
+}
+
+model Unsubscribe {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  email     String
+  token     String   @unique
+  createdAt DateTime @default(now())
+
+  @@unique([userId, email])
+  @@index([email])
+  @@index([token])
 }

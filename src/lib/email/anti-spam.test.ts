@@ -1,9 +1,19 @@
 import { mockDb } from "@/test/mocks/db";
 import { checkCooldown } from "./anti-spam";
 
+// Mock the unsubscribe module
+const { mockIsUnsubscribed } = vi.hoisted(() => ({
+  mockIsUnsubscribed: vi.fn(),
+}));
+
+vi.mock("@/lib/email/unsubscribe", () => ({
+  isUnsubscribed: (...args: unknown[]) => mockIsUnsubscribed(...args),
+}));
+
 describe("checkCooldown", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockIsUnsubscribed.mockResolvedValue(false);
   });
 
   it("allows sending when no prior sends exist", async () => {
@@ -74,5 +84,16 @@ describe("checkCooldown", () => {
         }),
       })
     );
+  });
+
+  it("blocks sending when recipient has unsubscribed", async () => {
+    mockIsUnsubscribed.mockResolvedValue(true);
+
+    const result = await checkCooldown("unsub@example.com", "user-1");
+
+    expect(result.allowed).toBe(false);
+    expect(result.reason).toContain("unsubscribed");
+    // Should not even check SendLog if unsubscribed
+    expect(mockDb.sendLog.findFirst).not.toHaveBeenCalled();
   });
 });

@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { SendLogStatus } from "@/generated/prisma/enums";
+import { isUnsubscribed } from "@/lib/email/unsubscribe";
 
 const COOLDOWN_HOURS = 72;
 const COOLDOWN_MS = COOLDOWN_HOURS * 60 * 60 * 1000;
@@ -10,13 +11,22 @@ interface CooldownResult {
 }
 
 /**
- * Check whether a contact email is within the 72-hour anti-spam cooldown
- * for a specific user. Only the given user's own send history is checked.
+ * Check whether a contact email is allowed to receive an email from this user.
+ * Checks unsubscribe status first, then 72-hour cooldown.
  */
 export async function checkCooldown(
   contactEmail: string,
   userId: string
 ): Promise<CooldownResult> {
+  // Check unsubscribe list first — CAN-SPAM requires honoring opt-outs
+  const unsubscribed = await isUnsubscribed(userId, contactEmail);
+  if (unsubscribed) {
+    return {
+      allowed: false,
+      reason: "Recipient has unsubscribed",
+    };
+  }
+
   const cutoff = new Date(Date.now() - COOLDOWN_MS);
 
   // Check SendLog for any successful send to this email by this user within 72 hours

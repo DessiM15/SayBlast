@@ -4,9 +4,10 @@ import { sendCampaign } from "./campaign-sender";
 import { CampaignStatus } from "@/generated/prisma/enums";
 
 // Use vi.hoisted to avoid hoisting issues with vi.mock factories
-const { mockSendMail, mockCheckCooldown } = vi.hoisted(() => ({
+const { mockSendMail, mockCheckCooldown, mockGenerateUnsubscribeUrl } = vi.hoisted(() => ({
   mockSendMail: vi.fn(),
   mockCheckCooldown: vi.fn(),
+  mockGenerateUnsubscribeUrl: vi.fn(),
 }));
 
 vi.mock("@/lib/email/transport-factory", () => ({
@@ -17,6 +18,15 @@ vi.mock("@/lib/email/transport-factory", () => ({
 
 vi.mock("@/lib/email/anti-spam", () => ({
   checkCooldown: (...args: unknown[]) => mockCheckCooldown(...args),
+}));
+
+vi.mock("@/lib/email/unsubscribe", () => ({
+  generateUnsubscribeUrl: (...args: unknown[]) => mockGenerateUnsubscribeUrl(...args),
+}));
+
+vi.mock("@/lib/email/compliance-footer", () => ({
+  injectComplianceFooter: (html: string) => html + "<!-- footer -->",
+  injectComplianceFooterText: (text: string) => text + "\n-- footer",
 }));
 
 function makeCampaign(overrides: Record<string, unknown> = {}) {
@@ -50,6 +60,7 @@ describe("sendCampaign", () => {
     vi.clearAllMocks();
     vi.useFakeTimers();
     mockCheckCooldown.mockResolvedValue({ allowed: true });
+    mockGenerateUnsubscribeUrl.mockResolvedValue("https://app.test/unsubscribe?token=abc123");
     setupResumeMocks();
   });
 
@@ -86,6 +97,20 @@ describe("sendCampaign", () => {
     );
   });
 
+  it("fails campaign when no postal address", async () => {
+    mockDb.campaign.findUnique.mockResolvedValue(
+      makeCampaign({ user: { ...baseUser, postalAddress: null } })
+    );
+    mockDb.campaign.update.mockResolvedValue({});
+
+    const result = await sendCampaign("campaign-1");
+
+    expect(result.errors[0]).toContain("Physical mailing address required");
+    expect(mockDb.campaign.update).toHaveBeenCalledWith(
+      expect.objectContaining({ data: { status: CampaignStatus.failed } })
+    );
+  });
+
   it("fails campaign when no contacts", async () => {
     mockDb.campaign.findUnique.mockResolvedValue(
       makeCampaign({ audienceList: { contacts: [] } })
@@ -114,6 +139,14 @@ describe("sendCampaign", () => {
     expect(result.skipped).toBe(0);
     expect(result.remaining).toBe(0);
     expect(mockSendMail).toHaveBeenCalledTimes(2);
+    // Verify List-Unsubscribe header is included
+    expect(mockSendMail).toHaveBeenCalledWith(
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          "List-Unsubscribe": expect.stringContaining("unsubscribe"),
+        }),
+      })
+    );
   });
 
   it("skips contacts on cooldown", async () => {
@@ -196,7 +229,9 @@ describe("sendCampaign", () => {
     mockDb.sendLog.count.mockResolvedValueOnce(2).mockResolvedValueOnce(0);
     mockDb.campaign.update.mockResolvedValue({});
 
-    const result = await sendCampaign("campaign-1");
+    const resultPromise = sendCampaign("campaign-1");
+    await vi.advanceTimersByTimeAsync(2000);
+    const result = await resultPromise;
 
     // Only bob should be sent (alice already processed)
     expect(result.sent).toBe(1);

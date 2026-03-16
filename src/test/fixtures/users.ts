@@ -20,6 +20,7 @@ export const baseUser: User = {
   emailVerified: true,
   onboardingComplete: true,
   pendingEmailData: null,
+  postalAddress: "123 Test St, Suite 100, Testville, TS 12345",
   createdAt: new Date("2025-01-01"),
   updatedAt: new Date("2025-01-01"),
 };

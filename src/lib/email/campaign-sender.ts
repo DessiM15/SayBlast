@@ -1,6 +1,11 @@
 import { db } from "@/lib/db";
 import { createEmailTransport } from "@/lib/email/transport-factory";
 import { checkCooldown } from "@/lib/email/anti-spam";
+import { generateUnsubscribeUrl } from "@/lib/email/unsubscribe";
+import {
+  injectComplianceFooter,
+  injectComplianceFooterText,
+} from "@/lib/email/compliance-footer";
 import { CampaignStatus, SendLogStatus } from "@/generated/prisma/enums";
 
 export interface SendResult {
@@ -53,6 +58,7 @@ export async function sendCampaign(campaignId: string): Promise<SendResult> {
           smtpUser: true,
           smtpPass: true,
           smtpSecure: true,
+          postalAddress: true,
         },
       },
       audienceList: {
@@ -77,6 +83,17 @@ export async function sendCampaign(campaignId: string): Promise<SendResult> {
 
   if (!campaign.htmlBody) {
     result.errors.push("Campaign has no HTML body");
+    await db.campaign.update({
+      where: { id: campaignId },
+      data: { status: CampaignStatus.failed },
+    });
+    return result;
+  }
+
+  if (!campaign.user.postalAddress) {
+    result.errors.push(
+      "Physical mailing address required (CAN-SPAM). Set it in Settings."
+    );
     await db.campaign.update({
       where: { id: campaignId },
       data: { status: CampaignStatus.failed },
@@ -149,14 +166,35 @@ export async function sendCampaign(campaignId: string): Promise<SendResult> {
       continue;
     }
 
-    // Send the email
+    // Send the email with CAN-SPAM compliance footer
     try {
+      const unsubscribeUrl = await generateUnsubscribeUrl(
+        campaign.userId,
+        contact.email
+      );
+      const htmlWithFooter = injectComplianceFooter(
+        campaign.htmlBody,
+        campaign.user.postalAddress!,
+        unsubscribeUrl
+      );
+      const textWithFooter = campaign.textBody
+        ? injectComplianceFooterText(
+            campaign.textBody,
+            campaign.user.postalAddress!,
+            unsubscribeUrl
+          )
+        : undefined;
+
       await transport.sendMail({
         from: campaign.user.emailAddress ?? campaign.user.email,
         to: contact.email,
         subject: campaign.subjectLine ?? "(No Subject)",
-        html: campaign.htmlBody,
-        text: campaign.textBody ?? undefined,
+        html: htmlWithFooter,
+        text: textWithFooter,
+        headers: {
+          "List-Unsubscribe": `<${unsubscribeUrl}>`,
+          "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+        },
       });
 
       // Write send log and update contact immediately

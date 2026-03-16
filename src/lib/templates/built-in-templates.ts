@@ -35,9 +35,6 @@ export const BUILT_IN_TEMPLATES: BuiltInTemplate[] = [
       <li>Update item three — brief description</li>
     </ul>
   </td></tr>
-  <tr><td style="background-color:#f9fafb;padding:24px 40px;text-align:center;">
-    <p style="margin:0;color:#a1a1aa;font-size:12px;">You received this because you subscribed to our newsletter.</p>
-  </td></tr>
 </table>
 </td></tr></table>
 </body>
@@ -65,9 +62,6 @@ export const BUILT_IN_TEMPLATES: BuiltInTemplate[] = [
         <a href="#" style="color:#ffffff;text-decoration:none;font-size:16px;font-weight:bold;">Learn More</a>
       </td></tr></table>
     </td></tr></table>
-  </td></tr>
-  <tr><td style="background-color:#f9fafb;padding:24px 40px;text-align:center;">
-    <p style="margin:0;color:#a1a1aa;font-size:12px;">Questions? Just reply to this email.</p>
   </td></tr>
 </table>
 </td></tr></table>
@@ -101,9 +95,6 @@ export const BUILT_IN_TEMPLATES: BuiltInTemplate[] = [
   <tr><td style="padding:0 40px;"><hr style="border:none;border-top:1px solid #e4e4e7;margin:0;"></td></tr>
   <tr><td style="padding:24px 40px;text-align:center;">
     <p style="margin:0;color:#71717a;font-size:13px;">Offer expires in 48 hours. Cannot be combined with other promotions.</p>
-  </td></tr>
-  <tr><td style="background-color:#f9fafb;padding:24px 40px;text-align:center;">
-    <p style="margin:0;color:#a1a1aa;font-size:12px;">You received this because you opted into promotional emails.</p>
   </td></tr>
 </table>
 </td></tr></table>
@@ -152,9 +143,6 @@ export const BUILT_IN_TEMPLATES: BuiltInTemplate[] = [
       </td></tr></table>
     </div>
   </td></tr>
-  <tr><td style="background-color:#f9fafb;padding:24px 40px;text-align:center;">
-    <p style="margin:0;color:#a1a1aa;font-size:12px;">Need help? Reply to this email anytime.</p>
-  </td></tr>
 </table>
 </td></tr></table>
 </body>
@@ -195,9 +183,6 @@ export const BUILT_IN_TEMPLATES: BuiltInTemplate[] = [
         <a href="#" style="color:#ffffff;text-decoration:none;font-size:16px;font-weight:bold;">RSVP Now</a>
       </td></tr></table>
     </div>
-  </td></tr>
-  <tr><td style="background-color:#f9fafb;padding:24px 40px;text-align:center;">
-    <p style="margin:0;color:#a1a1aa;font-size:12px;">Can't make it? Let us know by replying to this email.</p>
   </td></tr>
 </table>
 </td></tr></table>

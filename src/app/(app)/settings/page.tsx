@@ -8,9 +8,10 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Lock, Mail, Shield } from "lucide-react";
+import { Lock, Mail, MapPin, Shield } from "lucide-react";
 import ChangePasswordForm from "@/components/settings/change-password-form";
 import EmailProviderSettings from "@/components/settings/email-provider-settings";
+import PostalAddressForm from "@/components/settings/postal-address-form";
 
 export default async function SettingsPage() {
   const session = await getSession();
@@ -27,6 +28,7 @@ export default async function SettingsPage() {
       name: true,
       email: true,
       passwordHash: true,
+      postalAddress: true,
     },
   });
 
@@ -87,6 +89,23 @@ export default async function SettingsPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* CAN-SPAM Compliance */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <MapPin className="h-5 w-5" />
+            CAN-SPAM Compliance
+          </CardTitle>
+          <CardDescription>
+            Your physical mailing address is required by law on every email you
+            send
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <PostalAddressForm initialAddress={user.postalAddress ?? ""} />
+        </CardContent>
+      </Card>
 
       {user.passwordHash && (
         <Card>
