@@ -96,6 +96,9 @@ export default function SmtpForm({ onComplete }: SmtpFormProps) {
           onChange={(e) => setHost(e.target.value)}
           required
         />
+        <p className="text-xs text-muted-foreground">
+          Your email provider&apos;s SMTP server. Examples: smtp.gmail.com, smtp.office365.com, smtp.mail.yahoo.com
+        </p>
       </div>
 
       <div className="flex flex-col gap-2">
@@ -108,6 +111,9 @@ export default function SmtpForm({ onComplete }: SmtpFormProps) {
           onChange={(e) => setPort(e.target.value)}
           required
         />
+        <p className="text-xs text-muted-foreground">
+          Usually 587 (recommended) or 465 (SSL/TLS). Check your email provider&apos;s settings.
+        </p>
       </div>
 
       <div className="flex flex-col gap-2">
@@ -119,6 +125,9 @@ export default function SmtpForm({ onComplete }: SmtpFormProps) {
           onChange={(e) => setUsername(e.target.value)}
           required
         />
+        <p className="text-xs text-muted-foreground">
+          Usually your full email address.
+        </p>
       </div>
 
       <div className="flex flex-col gap-2">
@@ -131,6 +140,9 @@ export default function SmtpForm({ onComplete }: SmtpFormProps) {
           onChange={(e) => setPassword(e.target.value)}
           required
         />
+        <p className="text-xs text-muted-foreground">
+          For Gmail, use an App Password (not your regular password). Go to Google Account &gt; Security &gt; App Passwords.
+        </p>
       </div>
 
       <div className="flex items-center gap-2">
@@ -145,6 +157,9 @@ export default function SmtpForm({ onComplete }: SmtpFormProps) {
           Use SSL/TLS (port 465)
         </Label>
       </div>
+      <p className="text-xs text-muted-foreground -mt-2">
+        Check this only if your provider requires port 465. Most providers use port 587 without this checked.
+      </p>
 
       {error && (
         <p className="text-sm text-destructive" role="alert">
