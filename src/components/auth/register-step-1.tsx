@@ -54,7 +54,13 @@ export default function RegisterStep1({ onComplete }: RegisterStep1Props) {
       });
 
       if (signUpError) {
-        setServerError(signUpError.message);
+        if (signUpError.message.toLowerCase().includes("rate limit")) {
+          setServerError(
+            "Too many sign-up attempts for this email. Please wait about an hour before trying again, or use a different email address."
+          );
+        } else {
+          setServerError(signUpError.message);
+        }
         return;
       }
 

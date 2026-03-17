@@ -51,7 +51,13 @@ export default function LoginPage() {
       });
 
       if (authError) {
-        setServerError(authError.message);
+        if (authError.message.toLowerCase().includes("rate limit")) {
+          setServerError(
+            "Too many login attempts. Please wait a few minutes before trying again."
+          );
+        } else {
+          setServerError(authError.message);
+        }
         return;
       }
 
