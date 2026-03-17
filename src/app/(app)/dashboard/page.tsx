@@ -14,6 +14,7 @@ import { Megaphone, Users, FileText } from "lucide-react";
 import ActivityFeed, {
   type ActivityItem,
 } from "@/components/dashboard/activity-feed";
+import UnsubscribeOverview from "@/components/dashboard/unsubscribe-overview";
 
 export default async function DashboardPage() {
   const session = await getSession();
@@ -22,8 +23,16 @@ export default async function DashboardPage() {
   const firstName = session.name.split(" ")[0];
 
   // Fetch real stats and recent activity from database
-  const [totalCampaigns, emailsSent, upcoming, recentCampaigns, recentAudiences] =
-    await Promise.all([
+  const [
+    totalCampaigns,
+    emailsSent,
+    upcoming,
+    recentCampaigns,
+    recentAudiences,
+    totalUnsubscribes,
+    allUnsubscribes,
+    sentCampaignsForWatchList,
+  ] = await Promise.all([
       db.campaign.count({
         where: { userId: session.id },
       }),
@@ -65,7 +74,107 @@ export default async function DashboardPage() {
           _count: { select: { contacts: true } },
         },
       }),
+      db.unsubscribe.count({
+        where: { userId: session.id },
+      }),
+      db.unsubscribe.findMany({
+        where: { userId: session.id },
+        select: { createdAt: true },
+        orderBy: { createdAt: "asc" },
+      }),
+      db.campaign.findMany({
+        where: {
+          userId: session.id,
+          status: { in: [CampaignStatus.sent, CampaignStatus.failed] },
+          sentAt: { not: null },
+          sentCount: { gt: 0 },
+        },
+        select: {
+          id: true,
+          name: true,
+          sentCount: true,
+          sentAt: true,
+        },
+        orderBy: { sentAt: "desc" },
+        take: 20,
+      }),
     ]);
+
+  // Compute monthly unsubscribe data (last 6 months)
+  const now = new Date();
+  const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);
+  const monthlyMap = new Map<string, number>();
+
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const key = d.toLocaleDateString("en-US", { month: "short", year: "2-digit" });
+    monthlyMap.set(key, 0);
+  }
+
+  for (const unsub of allUnsubscribes) {
+    if (unsub.createdAt >= sixMonthsAgo) {
+      const key = unsub.createdAt.toLocaleDateString("en-US", {
+        month: "short",
+        year: "2-digit",
+      });
+      monthlyMap.set(key, (monthlyMap.get(key) ?? 0) + 1);
+    }
+  }
+
+  const monthlyData = Array.from(monthlyMap, ([month, count]) => ({
+    month,
+    count,
+  }));
+
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const unsubscribesThisMonth = allUnsubscribes.filter(
+    (u) => u.createdAt >= startOfMonth
+  ).length;
+
+  // Compute watch list: campaigns with highest unsubscribe rates
+  const watchList: Array<{
+    campaignId: string;
+    campaignName: string;
+    unsubscribeCount: number;
+    sentCount: number;
+  }> = [];
+
+  if (sentCampaignsForWatchList.length > 0 && totalUnsubscribes > 0) {
+    for (const camp of sentCampaignsForWatchList) {
+      if (!camp.sentAt) continue;
+
+      const sentEmails = await db.sendLog.findMany({
+        where: { campaignId: camp.id, status: "sent" },
+        select: { contactEmail: true },
+      });
+      const sentEmailList = sentEmails.map((s) => s.contactEmail);
+
+      if (sentEmailList.length === 0) continue;
+
+      const unsubCount = await db.unsubscribe.count({
+        where: {
+          userId: session.id,
+          email: { in: sentEmailList },
+          createdAt: { gt: camp.sentAt },
+        },
+      });
+
+      if (unsubCount > 0) {
+        watchList.push({
+          campaignId: camp.id,
+          campaignName: camp.name,
+          unsubscribeCount: unsubCount,
+          sentCount: camp.sentCount,
+        });
+      }
+    }
+
+    watchList.sort(
+      (a, b) =>
+        b.unsubscribeCount / b.sentCount - a.unsubscribeCount / a.sentCount
+    );
+    watchList.splice(3);
+  }
 
   // Build activity items from existing data
   const activityItems: ActivityItem[] = [];
@@ -246,6 +355,16 @@ export default async function DashboardPage() {
               </CardHeader>
             </Card>
           </div>
+
+          {emailsSent > 0 && (
+            <UnsubscribeOverview
+              totalUnsubscribes={totalUnsubscribes}
+              unsubscribesThisMonth={unsubscribesThisMonth}
+              totalEmailsSent={emailsSent}
+              monthlyData={monthlyData}
+              watchList={watchList}
+            />
+          )}
 
           <ActivityFeed items={topActivity} />
         </>
