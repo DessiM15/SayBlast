@@ -52,7 +52,48 @@ export async function GET(
       );
     }
 
-    return NextResponse.json({ campaign, sendLogTotal });
+    // Calculate post-send unsubscribe count
+    let unsubscribeCount = 0;
+    const unsubscribedEmails: string[] = [];
+
+    if (
+      (campaign.status === CampaignStatus.sent ||
+        campaign.status === CampaignStatus.failed) &&
+      campaign.sentAt
+    ) {
+      const sentEmails = await db.sendLog.findMany({
+        where: {
+          campaignId: id,
+          status: "sent",
+        },
+        select: { contactEmail: true },
+      });
+
+      const sentEmailList = sentEmails.map((s) => s.contactEmail);
+
+      if (sentEmailList.length > 0) {
+        const unsubscribes = await db.unsubscribe.findMany({
+          where: {
+            userId: session.id,
+            email: { in: sentEmailList },
+            createdAt: { gt: campaign.sentAt },
+          },
+          select: { email: true },
+        });
+
+        unsubscribeCount = unsubscribes.length;
+        for (const u of unsubscribes) {
+          unsubscribedEmails.push(u.email);
+        }
+      }
+    }
+
+    return NextResponse.json({
+      campaign,
+      sendLogTotal,
+      unsubscribeCount,
+      unsubscribedEmails,
+    });
   } catch (error) {
     if (error instanceof Error && error.message === "Unauthorized") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

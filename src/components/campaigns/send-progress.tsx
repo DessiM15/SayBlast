@@ -4,18 +4,20 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Mail, ShieldOff, AlertTriangle } from "lucide-react";
+import { Mail, ShieldOff, AlertTriangle, UserMinus } from "lucide-react";
 
 interface SendProgressProps {
   sentCount: number;
   skippedCount: number;
   totalRecipients: number;
+  unsubscribeCount?: number;
 }
 
 export default function SendProgress({
   sentCount,
   skippedCount,
   totalRecipients,
+  unsubscribeCount = 0,
 }: SendProgressProps) {
   const failedCount = totalRecipients - sentCount - skippedCount;
   const progressPercent =
@@ -73,7 +75,7 @@ export default function SendProgress({
         </div>
 
         {/* Stats row */}
-        <div className="grid grid-cols-3 gap-4 text-center">
+        <div className={`grid gap-4 text-center ${unsubscribeCount > 0 ? "grid-cols-4" : "grid-cols-3"}`}>
           <div className="rounded-lg bg-green-50 dark:bg-green-950 p-3">
             <div className="flex items-center justify-center gap-1 text-green-700 dark:text-green-300">
               <Mail className="h-4 w-4" />
@@ -95,6 +97,22 @@ export default function SendProgress({
             </div>
             <p className="mt-1 text-xs text-red-600 dark:text-red-400">Failed</p>
           </div>
+          {unsubscribeCount > 0 && (
+            <div className="rounded-lg bg-orange-50 dark:bg-orange-950 p-3">
+              <div className="flex items-center justify-center gap-1 text-orange-700 dark:text-orange-300">
+                <UserMinus className="h-4 w-4" />
+                <span className="text-xl font-bold">{unsubscribeCount}</span>
+              </div>
+              <p className="mt-1 text-xs text-orange-600 dark:text-orange-400">
+                Unsubscribed
+                {sentCount > 0 && (
+                  <span className="ml-1">
+                    ({((unsubscribeCount / sentCount) * 100).toFixed(1)}%)
+                  </span>
+                )}
+              </p>
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>

@@ -24,6 +24,7 @@ interface SendLogTableProps {
   pageSize: number;
   total: number;
   onPageChange: (page: number) => void;
+  unsubscribedEmails?: string[];
 }
 
 function formatDate(dateStr: string): string {
@@ -36,10 +37,12 @@ export default function SendLogTable({
   pageSize,
   total,
   onPageChange,
+  unsubscribedEmails = [],
 }: SendLogTableProps) {
   const start = (page - 1) * pageSize + 1;
   const end = Math.min(page * pageSize, total);
   const totalPages = Math.ceil(total / pageSize);
+  const unsubscribedSet = new Set(unsubscribedEmails);
 
   return (
     <Card>
@@ -64,7 +67,17 @@ export default function SendLogTable({
               {entries.map((log) => (
                 <tr key={log.id} className="border-b last:border-0">
                   <td className="py-2 pr-4 font-mono text-xs">
-                    {log.contactEmail}
+                    <div className="flex items-center gap-2">
+                      {log.contactEmail}
+                      {unsubscribedSet.has(log.contactEmail) && (
+                        <Badge
+                          variant="secondary"
+                          className="bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200 text-[10px] px-1.5 py-0"
+                        >
+                          Unsubscribed
+                        </Badge>
+                      )}
+                    </div>
                   </td>
                   <td className="py-2 pr-4">
                     <Badge

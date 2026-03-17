@@ -73,6 +73,8 @@ export default function CampaignDetailPage() {
   const [sendLogTotal, setSendLogTotal] = useState(0);
   const [showSendConfirm, setShowSendConfirm] = useState(false);
   const [showSaveTemplate, setShowSaveTemplate] = useState(false);
+  const [unsubscribeCount, setUnsubscribeCount] = useState(0);
+  const [unsubscribedEmails, setUnsubscribedEmails] = useState<string[]>([]);
 
   const loadCampaign = useCallback(async () => {
     try {
@@ -91,9 +93,13 @@ export default function CampaignDetailPage() {
       const data = (await response.json()) as {
         campaign: CampaignDetail;
         sendLogTotal: number;
+        unsubscribeCount: number;
+        unsubscribedEmails: string[];
       };
       setCampaign(data.campaign);
       setSendLogTotal(data.sendLogTotal);
+      setUnsubscribeCount(data.unsubscribeCount);
+      setUnsubscribedEmails(data.unsubscribedEmails);
       setPageStatus("ready");
     } catch {
       setErrorMessage("Failed to load campaign");
@@ -261,6 +267,7 @@ export default function CampaignDetailPage() {
           sentCount={campaign.sentCount}
           skippedCount={campaign.skippedCount}
           totalRecipients={campaign.totalRecipients}
+          unsubscribeCount={unsubscribeCount}
         />
       )}
 
@@ -272,6 +279,7 @@ export default function CampaignDetailPage() {
           pageSize={SEND_LOG_PAGE_SIZE}
           total={sendLogTotal}
           onPageChange={setSendLogPage}
+          unsubscribedEmails={unsubscribedEmails}
         />
       )}
 
