@@ -65,14 +65,31 @@ export default function RegisterStep1({ onComplete }: RegisterStep1Props) {
         body: JSON.stringify({ name, email, password }),
       });
 
-      const data = await response.json();
+      const data = (await response.json()) as { error?: string | Record<string, string[]>; userId?: string };
 
       if (!response.ok) {
-        setServerError(data.error || "Registration failed");
+        if (typeof data.error === "string") {
+          setServerError(data.error);
+        } else if (typeof data.error === "object" && data.error !== null) {
+          // Handle field-level errors (e.g. breached password)
+          const fieldErrors: Record<string, string> = {};
+          for (const [key, messages] of Object.entries(data.error)) {
+            if (Array.isArray(messages) && messages.length > 0) {
+              fieldErrors[key] = messages[0];
+            }
+          }
+          if (Object.keys(fieldErrors).length > 0) {
+            setErrors(fieldErrors);
+          } else {
+            setServerError("Registration failed");
+          }
+        } else {
+          setServerError("Registration failed");
+        }
         return;
       }
 
-      onComplete(data.userId);
+      onComplete(data.userId ?? "");
     } catch {
       setServerError("An unexpected error occurred. Please try again.");
     } finally {
@@ -142,6 +159,9 @@ export default function RegisterStep1({ onComplete }: RegisterStep1Props) {
             autoComplete="new-password"
             disabled={isPending}
           />
+          <p className="text-xs text-muted-foreground">
+            8-72 characters. Passwords found in known data breaches will be rejected.
+          </p>
           {errors.password && (
             <p className="text-sm text-destructive" role="alert">{errors.password}</p>
           )}
