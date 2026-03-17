@@ -18,7 +18,6 @@ export default function RegisterStep2({
   const [selectedProvider, setSelectedProvider] =
     useState<EmailProvider | null>(null);
   const [error, setError] = useState("");
-  const [isPending, setIsPending] = useState(false);
 
   function handleGmailConnect() {
     const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
@@ -75,27 +74,8 @@ export default function RegisterStep2({
     window.location.href = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?${params.toString()}`;
   }
 
-  async function handleSmtpComplete() {
-    setIsPending(true);
-    setError("");
-
-    try {
-      const response = await fetch("/api/auth/complete-onboarding", {
-        method: "POST",
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        setError(data.error || "Failed to complete onboarding");
-        return;
-      }
-
-      onComplete();
-    } catch {
-      setError("An unexpected error occurred.");
-    } finally {
-      setIsPending(false);
-    }
+  function handleSmtpComplete() {
+    onComplete();
   }
 
   if (selectedProvider === EmailProvider.smtp) {
@@ -171,11 +151,6 @@ export default function RegisterStep2({
         </p>
       )}
 
-      {isPending && (
-        <p className="text-sm text-muted-foreground">
-          Completing setup...
-        </p>
-      )}
     </div>
   );
 }

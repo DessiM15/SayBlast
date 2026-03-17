@@ -10,7 +10,7 @@ export async function POST() {
     // Verify user has connected an email account
     const user = await db.user.findUnique({
       where: { id: session.id },
-      select: { emailProvider: true, emailVerified: true },
+      select: { emailProvider: true, emailVerified: true, postalAddress: true },
     });
 
     if (!user) {
@@ -23,6 +23,13 @@ export async function POST() {
     if (!user.emailProvider || !user.emailVerified) {
       return NextResponse.json(
         { error: "You must connect an email account first" },
+        { status: 400 }
+      );
+    }
+
+    if (!user.postalAddress) {
+      return NextResponse.json(
+        { error: "Physical mailing address is required to complete setup" },
         { status: 400 }
       );
     }

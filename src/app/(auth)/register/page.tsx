@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import RegisterStep1 from "@/components/auth/register-step-1";
 import RegisterStep2 from "@/components/auth/register-step-2";
+import RegisterStepPostal from "@/components/auth/register-step-postal";
 import RegisterStep3 from "@/components/auth/register-step-3";
 
 export default function RegisterPage() {
@@ -13,6 +14,7 @@ export default function RegisterPage() {
   const stepTitles = [
     "Create your account",
     "Connect your email",
+    "Add your mailing address",
     "You're all set!",
   ];
 
@@ -20,7 +22,7 @@ export default function RegisterPage() {
     <Card>
       <CardHeader className="text-center">
         <div className="mb-2 flex justify-center gap-2">
-          {[1, 2, 3].map((step) => (
+          {[1, 2, 3, 4].map((step) => (
             <div
               key={step}
               className={`h-2 w-12 rounded-full transition-all duration-200 ${
@@ -50,7 +52,10 @@ export default function RegisterPage() {
             onComplete={() => setCurrentStep(3)}
           />
         )}
-        {currentStep === 3 && <RegisterStep3 />}
+        {currentStep === 3 && (
+          <RegisterStepPostal onComplete={() => setCurrentStep(4)} />
+        )}
+        {currentStep === 4 && <RegisterStep3 />}
       </CardContent>
     </Card>
   );
