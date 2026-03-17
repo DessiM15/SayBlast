@@ -11,10 +11,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Clock, Loader2, Mic, Pencil, ShieldAlert } from "lucide-react";
+import { Clock, Loader2, Mic, Pencil, Send, ShieldAlert } from "lucide-react";
 import { CampaignStatus } from "@/generated/prisma/enums";
 import { ANTI_SPAM_COOLDOWN_HOURS } from "@/lib/constants";
 import ScheduleConfirmDialog from "@/components/campaigns/schedule-confirm-dialog";
+import TestSendDialog from "@/components/campaigns/test-send-dialog";
 
 const TiptapEditor = dynamic(
   () => import("@/components/campaigns/tiptap-editor"),
@@ -84,6 +85,7 @@ export default function EditorPanel({
   });
   const [hasPostalAddress, setHasPostalAddress] = useState<boolean | null>(null);
   const [showScheduleConfirm, setShowScheduleConfirm] = useState(false);
+  const [showTestSend, setShowTestSend] = useState(false);
 
   useEffect(() => {
     fetch("/api/settings/postal-address")
@@ -202,6 +204,17 @@ export default function EditorPanel({
               className="w-full rounded-md border bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             />
           </div>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowTestSend(true)}
+            disabled={!campaign.htmlBody}
+            className="w-fit"
+          >
+            <Send className="mr-2 h-3.5 w-3.5" />
+            Send Test Email
+          </Button>
         </div>
       </Card>
 
@@ -374,6 +387,13 @@ export default function EditorPanel({
           </>
         )}
       </Button>
+
+      <TestSendDialog
+        campaignId={campaignId}
+        defaultEmail={sendingEmail ?? ""}
+        open={showTestSend}
+        onOpenChange={setShowTestSend}
+      />
 
       <ScheduleConfirmDialog
         campaign={{

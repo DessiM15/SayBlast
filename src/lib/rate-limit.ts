@@ -38,6 +38,11 @@ const limiters = {
     limiter: Ratelimit.slidingWindow(5, "60 s"),
     prefix: "rl:cron",
   }),
+  testSend: new Ratelimit({
+    redis,
+    limiter: Ratelimit.slidingWindow(5, "3600 s"),
+    prefix: "rl:testSend",
+  }),
 };
 
 export async function rateLimit(
